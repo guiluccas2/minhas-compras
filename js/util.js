@@ -88,7 +88,7 @@ export function abrirJanela(html, { aoFechar } = {}) {
   document.body.appendChild(fundo);
   document.body.classList.add("travado");
   const primeiro = fundo.querySelector("input:not([type=hidden]):not([readonly]),select,textarea");
-  if (primeiro && matchMedia("(pointer:fine)").matches) setTimeout(() => primeiro.focus(), 30);
+  if (primeiro && matchMedia("(pointer:fine)").matches) primeiro.focus();
   return fundo.querySelector(".jconteudo");
 }
 export function fecharJanela() {

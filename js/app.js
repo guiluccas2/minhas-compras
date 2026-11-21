@@ -142,10 +142,13 @@ async function iniciar() {
     autorizado = true;
     if (!REG.size || precisaSemear()) semear();
     desenhar();
-  } else if (!autorizado) {
-    main.innerHTML = `<p class="vazio">Carregando…</p>`;
   }
+  // segurança: se nada respondeu em 15 s, mostra o motivo em vez de ficar carregando
+  setTimeout(() => { if (main.textContent.trim() === "Carregando…") telaLogin("O login não respondeu. Verifique a internet e toque em Entrar com Google."); }, 15000);
 }
+// erro inesperado na abertura: mostra na tela (ajuda a descobrir o problema)
+addEventListener("error", e => { if (main.textContent.trim() === "Carregando…") main.innerHTML = `<p class="erro-box">Erro ao abrir: ${esc(e.message)}</p>`; });
+addEventListener("unhandledrejection", e => { if (main.textContent.trim() === "Carregando…") main.innerHTML = `<p class="erro-box">Erro ao abrir: ${esc(e.reason?.message || e.reason)}</p>`; });
 iniciar();
 
 if ("serviceWorker" in navigator && location.protocol === "https:") {

@@ -76,7 +76,7 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   await page.fill("#ln-cada", "18,90");
   await page.waitForTimeout(50);
   await page.fill("#ln-marca", "Melitta");
-  ok((await page.inputValue("#ln-total")) === "37,80", "total = 2 × 18,90");
+  { const t = await page.inputValue("#ln-total"); ok(t === "37,80", "total = 2 × 18,90 → " + t + " (qtd " + await page.inputValue("#ln-qtd") + ")"); }
   ok((await page.textContent("#ln-calc")).includes("por kg"), "mostra preço por kg: " + (await page.textContent("#ln-calc")));
   await page.click("#fln button.btn:not(.perigo)");
   await page.waitForTimeout(120);

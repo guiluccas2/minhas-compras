@@ -46,7 +46,8 @@ export async function iniciarNuvem({ aoEntrar, aoSair, aoErro, aoSincronizar, ao
   }
   col = fb.collection(db, "casa", "principal", "regs");
 
-  try { await fb.getRedirectResult(auth); } catch (e) { aoErro?.(traduzErro(e)); }
+  // resultado de um login por redirecionamento (celular): não segura a abertura do app
+  fb.getRedirectResult(auth).catch(e => aoErro?.(traduzErro(e)));
 
   fb.onAuthStateChanged(auth, user => {
     if (pararEscuta) { pararEscuta(); pararEscuta = null; }

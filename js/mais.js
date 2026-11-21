@@ -6,7 +6,7 @@ import { formItem, unTxt, qtdTxt, anotar } from "./ui.js";
 import { CATEGORIAS, LOCAIS, TIPOS_LOJA } from "./catalogo.js";
 import { nuvem, sair } from "./nuvem.js";
 
-export const VERSAO = "1.0.0";
+export const VERSAO = "1.0.1";
 const filtroCat = { q: "" };
 
 export function telaMais() {

@@ -7,4 +7,10 @@ SRV=$!
 trap "kill $SRV" EXIT
 sleep 1
 for f in js/*.js sw.js; do node --check "$f" || exit 1; done
-node testes/teste-app.js "http://localhost:$PORTA/"
+FALHA=0
+node testes/teste-app.js "http://localhost:$PORTA/" || FALHA=1
+# bibliotecas do Firebase para o teste de abertura (baixadas uma vez, fora do Git)
+FB=testes/firebase-lib/node_modules/firebase
+if [ ! -f "$FB/firebase-app.js" ]; then (mkdir -p testes/firebase-lib && cd testes/firebase-lib && echo '{"name":"firebase-lib","private":true}' > package.json && npm i firebase@10.12.2 --silent >/dev/null 2>&1); fi
+if [ -f "$FB/firebase-app.js" ]; then node testes/teste-firebase.js "http://localhost:$PORTA/" "$PWD/$FB" || FALHA=1; else echo "⚠ teste do Firebase pulado (sem npm)"; fi
+exit $FALHA
