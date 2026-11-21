@@ -9,16 +9,36 @@ import { telaInicio, telaEstoque, telaLista, telaItem, filtros, anotarNaLista } 
 import { telaComprando, telaCompras, telaCompra, iniciarCompra, abrirLinha, finalizarCompra, cancelarCompra, editarCompra, excluirCompra, escolherItemPara, cadastrarEPegar, buscaCompra } from "./compra.js";
 import { telaPrecos, buscaPrecos, telaRelatorio, lerCodigo, tratarCodigo } from "./extras.js";
 import { abrirConsumo } from "./ui.js";
+import { estadoSync, syncHtml, SYNC_TXT, temaHtml, aplicarTema, versaoHtml, checarVersao, atualizarApp, versao } from "./mais.js";
 import { telaMais, telaCatalogo, ligarBuscaCatalogo, telaInventario, trocarLocalInventario, salvarInventario, telaLojas, formLoja, telaConfig, salvarConfig, telaBackup, baixarJson, baixarCsv, restaurar, sairDaConta } from "./mais.js";
 
 const main = $("#tela");
-const NAV = [
-  ["inicio", "Início", "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"],
-  ["estoque", "Estoque", "M4 7h16v13H4zM2 3h20v4H2zM9 11h6"],
-  ["lista", "Comprar", "M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20.5h.01M17 20.5h.01"],
-  ["compras", "Gastos", "M4 20V10M10 20V4M16 20v-7M22 20H2"],
-  ["ajustes", "Ajustes", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"],
+// Ícones no mesmo traço do Minhas Finanças
+const ICONES = {
+  inicio: "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+  estoque: "M4 7h16v13H4zM2 3h20v4H2zM9 11h6",
+  inventario: "M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2 2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2zM9 12l2 2 4-4",
+  catalogo: "M3 12V4h8l9 9-8 8zM7.5 7.5h.01",
+  lista: "M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20.5h.01M17 20.5h.01",
+  compras: "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01",
+  relatorio: "M4 20V10M10 20V4M16 20v-7M2 20h20",
+  precos: "M12 3v18M17 7.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 2.2 2.8 5 3.4 5 1.6 5 3.6-2.2 3-5 3-5-1.1-5-3",
+  ajustes: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.4-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z",
+  config: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  lojas: "M4 10v10h16V10M3 4h18l-1 6H4zM9 20v-5h6v5",
+  backup: "M12 3v12M7 10l5 5 5-5M4 21h16",
+};
+const icone = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONES[n]}"/></svg>`;
+// celular: 5 botões embaixo
+const NAV = [["inicio", "Início"], ["estoque", "Estoque"], ["lista", "Comprar"], ["compras", "Gastos"], ["ajustes", "Ajustes"]];
+// computador: menu lateral com grupos, como no Minhas Finanças
+const LATERAL = [
+  ["Dia a dia", [["inicio", "Início"], ["estoque", "Estoque"], ["lista", "Lista de compras"]]],
+  ["Casa", [["inventario", "Inventário"], ["catalogo", "Catálogo"]]],
+  ["Analisar", [["compras", "Compras feitas"], ["relatorio", "Relatório do mês"], ["precos", "Comparar preços"]]],
+  ["Ajustes", [["config", "Planejamento"], ["lojas", "Lojas"], ["backup", "Cópia de segurança"], ["ajustes", "Aparência e conta"]]],
 ];
+const ICONE_MARCA = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONES.lista}"/></svg>`;
 let autorizado = false;
 
 function rota() {
@@ -29,10 +49,26 @@ function rota() {
 }
 
 function desenharNav(ativo) {
-  // telas que acendem cada botão do menu de baixo
+  // telas que acendem cada botão do menu de baixo / do menu lateral
   const mapa = { item: "estoque", inventario: "estoque", catalogo: "estoque", comprando: "lista", compra: "compras", relatorio: "compras", precos: "compras", mais: "ajustes", lojas: "ajustes", config: "ajustes", backup: "ajustes" };
-  const at = mapa[ativo] || ativo;
-  $("#nav").innerHTML = NAV.map(([k, nome, d]) => `<a href="#/${k}" class="${k === at ? "on" : ""}" ${k === at ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg><span>${nome}</span></a>`).join("");
+  const lat = { item: "estoque", comprando: "lista", compra: "compras", mais: "ajustes" };
+  const at = mapa[ativo] || ativo, atL = lat[ativo] || ativo;
+  const cur = on => `aria-current="${on ? "page" : "false"}"`;
+  $("#nav").innerHTML = NAV.map(([k, nome]) => `<a href="#/${k}" ${cur(k === at)}>${icone(k)}<span>${nome}</span></a>`).join("");
+  $("#side").innerHTML = `<div class="brand"><i>${ICONE_MARCA}</i>Minhas Compras</div>
+    ${LATERAL.map(([g, itens]) => `<div class="grp">${g}</div>${itens.map(([k, nome]) => `<a class="nav" href="#/${k}" ${cur(k === atL)}>${icone(k)}${nome}</a>`).join("")}`).join("")}
+    <div class="foot">${syncHtml()}${temaHtml()}${versaoHtml()}</div>`;
+}
+// bolinha da nuvem ao lado do título (celular) e texto no menu lateral
+function atualizarSync() {
+  const s = estadoSync();
+  document.querySelectorAll(".sync").forEach(el => { el.className = "sync " + s; el.innerHTML = `<i></i>${esc(SYNC_TXT[s])}`; });
+  document.querySelectorAll(".mtop-sync").forEach(el => { el.className = "mtop-sync " + s; el.title = SYNC_TXT[s]; });
+}
+function bolinhaSync() {
+  const h1 = main.querySelector(".topo h1");
+  if (h1 && !h1.querySelector(".mtop-sync")) h1.insertAdjacentHTML("afterbegin", `<span class="mtop-sync" role="img"></span>`);
+  atualizarSync();
 }
 
 function desenhar() {
@@ -52,6 +88,7 @@ function desenhar() {
   const pos = foco ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
   main.innerHTML = fn();
   desenharNav(r.nome);
+  bolinhaSync();
   if (foco) { const el = document.getElementById(foco); if (el) { el.focus(); try { el.setSelectionRange(...pos); } catch {} } }
   document.title = "Minhas Compras";
 }
@@ -68,6 +105,9 @@ document.addEventListener("click", async e => {
   if (d.listaLoja) { filtros.listaLoja = d.listaLoja; return desenhar(); }
   if (d.invLocal) { trocarLocalInventario(d.invLocal); return desenhar(); }
   const a = d.acao;
+  if (a === "tema") { aplicarTema(d.v); return desenhar(); }
+  if (a === "atualizar-app") return atualizarApp();
+  if (a === "instalar") { const p = versao.instalar; if (p) { p.prompt(); await p.userChoice.catch(() => {}); versao.instalar = null; desenhar(); } return; }
   if (["usei", "abri", "acabou", "zerou", "status", "consumo"].includes(a)) { e.preventDefault(); return acaoRapida(a, d.id, d.v); }
   switch (a) {
     case "novo-item": return formItem(null, { nomeInicial: d.nome || "" });
@@ -123,13 +163,13 @@ addEventListener("hashchange", () => { fecharJanela(); desenhar(); scrollTo(0, 0
 function telaLogin(msg = "") {
   autorizado = false;
   $("#nav").innerHTML = "";
-  main.innerHTML = `<div class="login">
-    <img src="icons/icon-192.png" alt="" width="72" height="72">
-    <h1>Minhas Compras</h1>
-    <p class="sub">Estoque da casa, lista de compras e preços, sincronizados entre os celulares e o computador.</p>
+  $("#side").innerHTML = "";
+  main.innerHTML = `<div class="login"><div class="cartao">
+    <div class="brand" style="padding:0"><i>${ICONE_MARCA}</i>Minhas Compras</div>
+    <p class="sub">Entre com a sua conta Google. Estoque da casa, lista de compras e preços, sincronizados entre os celulares e o computador.</p>
     ${msg ? `<p class="erro-box">${esc(msg)}</p>` : ""}
     ${nuvem.usuario ? `<p class="sub">Conectado como ${esc(nuvem.usuario.email)}</p><button class="btn" data-acao="sair-direto">Sair e entrar com outro e-mail</button>` : `<button class="btn" data-acao="entrar">Entrar com Google</button>`}
-  </div>`;
+  </div></div>`;
 }
 
 function semear() {
@@ -145,7 +185,7 @@ async function iniciar() {
     aoEntrar: () => { autorizado = true; desenhar(); },
     aoSair: () => telaLogin(),
     aoErro: msg => { if (/acesso|autorizado/.test(msg)) telaLogin(msg); else aviso(msg, "erro"); },
-    aoSincronizar: () => { const el = $("#sync"); if (el) el.dataset.s = estado.sync; },
+    aoSincronizar: () => atualizarSync(),
     aoPrimeiraCarga: () => semear(),
   });
   if (!naNuvem) {
@@ -164,3 +204,14 @@ iniciar();
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
+// versão nova publicada: confere ao abrir, a cada 30 minutos e ao voltar para o app
+checarVersao();
+setInterval(checarVersao, 30 * 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checarVersao(); });
+// tema "Automático": acompanha a troca de claro/escuro do aparelho
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => aplicarTema(document.documentElement.dataset.theme || "auto"));
+// botão "Instalar" (Chrome/Edge) aparece em Ajustes quando o navegador oferece
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); versao.instalar = e; if (rota().nome === "ajustes") desenhar(); });
+// teclado aberto no celular: esconde a barra de baixo
+document.addEventListener("focusin", e => { if (e.target.matches?.("input:not([type=checkbox]):not([type=radio]), textarea, select")) document.documentElement.classList.add("typing"); });
+document.addEventListener("focusout", () => setTimeout(() => { if (!document.activeElement?.matches?.("input, textarea, select")) document.documentElement.classList.remove("typing"); }, 120));

@@ -1,4 +1,4 @@
-// Menu "Mais": Catálogo, Inventário, Lojas, Planejamento (configurações), Cópia de segurança e Conta.
+// Ajustes (tema, conta, versão), Catálogo, Inventário, Lojas, Planejamento e Cópia de segurança.
 
 import { abas, esc, num, hoje, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, dataCurta, NOMES_SEMANA, agrupar, reais } from "./util.js";
 import { cfg, itens, itensAtivos, lojas, salvar, situacao, REG, vivos, porId, linhasDaCompra, comprasFeitas, nomeLoja, totalCompra, estado } from "./dados.js";
@@ -7,23 +7,71 @@ import { ABAS_ESTOQUE } from "./telas.js";
 import { CATEGORIAS, LOCAIS, TIPOS_LOJA } from "./catalogo.js";
 import { nuvem, sair } from "./nuvem.js";
 
-export const VERSAO = "1.3.0";
+// versão do app: mudar aqui e em version.json a cada atualização publicada
+export const VERSAO = "1.4.0";
+export const DATA_VERSAO = "21/11/2026";
 const filtroCat = { q: "" };
 
+// ---------- Moldura (igual ao Minhas Finanças): situação da nuvem, tema e versão ----------
+export const SYNC_TXT = { saved: "Salvo na nuvem", saving: "Salvando…", offline: "Sem internet: salva depois", error: "Erro ao sincronizar: tentando de novo", local: "Modo local (só neste aparelho)" };
+export function estadoSync() {
+  if (nuvem.modo !== "firebase") return "local";
+  if (nuvem.erro) return "error";
+  return { ok: "saved", enviando: "saving", offline: "offline" }[estado.sync] || "saving";
+}
+export const syncHtml = () => { const s = estadoSync(); return `<div class="sync ${s}"><i></i>${esc(SYNC_TXT[s])}</div>`; };
+
+// Tema: "light" (claro), "dark" (escuro) ou "auto" (segue o aparelho). Guardado em cada aparelho.
+export function temaAtual() { try { const t = localStorage.getItem("mc-tema"); return t === "light" || t === "dark" ? t : "auto"; } catch { return "auto"; } }
+export function aplicarTema(t) {
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem("mc-tema", t); } catch {}
+  const escuro = t === "dark" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", escuro ? "#161d1a" : "#0d6b59");
+}
+export function temaHtml(longo = false) {
+  const t = temaAtual();
+  const ops = [["light", "Claro"], ["dark", "Escuro"], ["auto", longo ? "Automático" : "Auto"]];
+  return `<div class="${longo ? "seg" : "theme"}" role="group" aria-label="Tema">${ops.map(([k, n]) => `<button data-acao="tema" data-v="${k}" aria-pressed="${t === k}">${n}</button>`).join("")}</div>`;
+}
+
+// Versão: mostra a atual e avisa quando há uma mais nova publicada
+export const versao = { nova: null, instalar: null };
+export function versaoHtml() {
+  return `<div class="ver">Versão ${VERSAO} · ${DATA_VERSAO}${versao.nova ? `<br><button class="link" data-acao="atualizar-app">Nova versão ${esc(versao.nova)}: atualizar</button>` : `<span> · atualizada</span>`}</div>`;
+}
+export async function checarVersao() {
+  try {
+    const resp = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    if (!resp.ok) return;
+    const v = (await resp.json()).version;
+    const nv = v && v !== VERSAO ? v : null;
+    if (nv !== versao.nova) { versao.nova = nv; $$(".ver").forEach(el => el.outerHTML = versaoHtml()); }
+  } catch {}
+}
+export async function atualizarApp() {
+  try { const registros = await navigator.serviceWorker?.getRegistrations?.(); for (const reg of registros || []) await reg.update(); } catch {}
+  location.reload();
+}
+
 export function telaMais() {
-  return `<header class="topo"><div><h1>Ajustes</h1><p class="sub">Configurações que vocês mudam de vez em quando.</p></div></header>
+  const s = estadoSync();
+  return `<header class="topo"><div><h1>Ajustes</h1></div></header>
   <nav class="menu-mais">
     <a href="#/config"><b>Planejamento e orçamento</b><span class="sub">dia da compra semanal, compra grande, orçamento do mês</span></a>
     <a href="#/lojas"><b>Lojas</b><span class="sub">${lojas().filter(l => l.ativo !== false).length} lojas cadastradas</span></a>
     <a href="#/backup"><b>Cópia de segurança</b><span class="sub">baixar os dados ou a planilha das compras</span></a>
   </nav>
   <p class="dica">Procurando outra coisa? <b>Catálogo</b> e <b>Inventário</b> ficam em <a href="#/estoque">Estoque</a>; <b>histórico de compras</b>, <b>relatório do mês</b> e <b>comparar preços</b> ficam em <a href="#/compras">Gastos</a>.</p>
-  <div class="cartao">
-    ${nuvem.modo === "firebase" && nuvem.usuario ? `<div class="linha1"><span><b>${esc(nuvem.usuario.nome)}</b><br><span class="sub">${esc(nuvem.usuario.email)}</span></span><button class="btn sec mini-btn" data-acao="sair">Sair</button></div>
-    <span class="sub">Sincronização: ${({ ok: "em dia", enviando: "enviando…", offline: "sem internet (envia quando voltar)" })[estado.sync] || estado.sync}</span>`
-    : `<b>Modo local</b><span class="sub">Os dados ficam só neste aparelho.${nuvem.erro ? " " + esc(nuvem.erro) : ""}</span>`}
-  </div>
-  <p class="sub centro">Minhas Compras · versão ${VERSAO}</p>`;
+  <section class="cartao"><h2>Aparência</h2>${temaHtml(true)}<span class="sub">Automático segue o modo claro/escuro do celular ou do computador. Vale só para este aparelho.</span></section>
+  <section class="cartao"><h2>Dados</h2>
+    ${nuvem.modo === "firebase" && nuvem.usuario ? `<div class="linha1"><span>Conectado como <b>${esc(nuvem.usuario.nome)}</b><br><span class="sub">${esc(nuvem.usuario.email)}</span></span><button class="btn sec mini-btn" data-acao="sair">Sair</button></div>
+    <span class="sub">Tudo é salvo sozinho na nuvem e aparece nos celulares e no computador. Sem internet, as anotações ficam no aparelho e sobem quando a conexão voltar.</span>`
+    : `<span class="sub">Modo local: os dados ficam só neste aparelho.${nuvem.erro ? " " + esc(nuvem.erro) : ""}</span>`}
+    <div class="sync ${s}" style="padding:0"><i></i>${esc(SYNC_TXT[s])}</div>
+  </section>
+  ${versao.instalar ? `<section class="cartao"><h2>Instalar como aplicativo</h2><span class="sub">Abre em tela cheia, com ícone próprio, e funciona sem internet.</span><div class="botoes"><button class="btn" data-acao="instalar">Instalar</button></div></section>` : ""}
+  ${versaoHtml()}`;
 }
 
 // ---------- Catálogo ----------

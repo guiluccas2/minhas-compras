@@ -9,6 +9,10 @@ PWA em JavaScript puro (módulos ES, sem build), publicado no GitHub Pages (`htt
 - Cada item escolhe o controle: `modo: "un"` (por unidade: usei 1…), `"emb"` (por embalagem: abri um / acabou um) ou `"status"` (tem / acabando / acabou).
 - Lojas iniciais: Panelão do Centro, Panelão da Honorina, Estrela, Jesus Garcia (Agudos); Tauste, Atacadão (Bauru). Catálogo sugerido em `js/catalogo.js` (gravado só no primeiro acesso; depois tudo é editável no app).
 
+## Visual
+- **Igual ao Minhas Finanças**: mesmas cores (variáveis `--bg`, `--surface`, `--accent`… em `css/app.css`, copiadas do `index.html` dele), letras, cartões, menu lateral com grupos no computador e barra de baixo no celular. Mudou o visual de um? Mude o do outro.
+- Tema claro/escuro/automático por aparelho (`mc-tema` no localStorage, `aplicarTema` em mais.js; script no `index.html` evita piscar). Situação da nuvem: `estadoSync()` (menu lateral e bolinha ao lado do título). Versão no rodapé do menu e em Ajustes.
+
 ## Como os dados funcionam (confira antes de mudar)
 - Registros `{ id, t, ... }` com `t` = `item`, `loja`, `compra`, `linha` (item de uma compra), `mov` (anotação de consumo), `lista` (anotação manual na lista), `cfg`.
 - **Estoque não é gravado**: é calculado (`situacao()` em `js/dados.js`) a partir das linhas de compras finalizadas e das anotações (`mov`: usei, abri, acabou, zerou, contagem, status). Assim duas pessoas anotando juntas nunca se sobrescrevem. Não crie campo de estoque.
@@ -33,5 +37,5 @@ PWA em JavaScript puro (módulos ES, sem build), publicado no GitHub Pages (`htt
 ## Antes de publicar
 1. `bash testes/rodar.sh` (Playwright já instalado; tudo ✔). Teste novo para cada funcionalidade nova.
 2. Celular: tudo cabe em 390 px; avisos e botões sem cobrir a tela.
-3. Versão: trocar `?v=` em `index.html` e `sw.js`, `VERSAO` em `js/mais.js`, subir `CACHE` em `sw.js`.
+3. Versão: trocar `?v=` em `index.html` e `sw.js`, `VERSAO` e `DATA_VERSAO` em `js/mais.js` + `version.json` (o app compara e mostra “Nova versão: atualizar”), subir `CACHE` em `sw.js`.
 4. Commit e push na `main` (o GitHub Pages publica sozinho).

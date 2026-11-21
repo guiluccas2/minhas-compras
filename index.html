@@ -5,22 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Minhas Compras</title>
 <meta name="description" content="Estoque da casa, lista de compras e preços.">
-<meta name="theme-color" content="#1f6b45">
+<meta name="theme-color" content="#0d6b59">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Compras">
+<script>
+  // aplica o tema antes de desenhar a página, para não piscar
+  try { const t = localStorage.getItem("mc-tema"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/app.css?v=1.3.0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/app.css?v=1.4.0">
 </head>
 <body>
 <div class="app">
-  <nav id="nav" class="nav" aria-label="Menu principal"></nav>
+  <aside id="side" class="side" aria-label="Menu"></aside>
   <main id="tela" class="tela"><p class="vazio">Carregando…</p></main>
+  <nav id="nav" class="bnav" aria-label="Navegação"></nav>
 </div>
-<script type="module" src="js/app.js?v=1.3.0"></script>
+<script type="module" src="js/app.js?v=1.4.0"></script>
 </body>
 </html>

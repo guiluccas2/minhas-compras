@@ -73,7 +73,7 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   await page.waitForSelector("text=Falta pegar");
   await page.goto(BASE + "?local=1#/lista");
   await page.waitForSelector("text=Falta pegar");
-  ok(await page.locator("#nav a.on span").textContent() === "Comprar", "com compra em andamento, o botão Comprar abre direto o Modo Compra");
+  ok(await page.locator('#nav a[aria-current="page"] span').textContent() === "Comprar", "com compra em andamento, o botão Comprar abre direto o Modo Compra");
   await page.click('[data-acao="linha-nova"][data-id="it-cafe-em-po"]');
   await page.fill("#ln-qtd", "2");
   await page.fill("#ln-cada", "18,90");
@@ -254,12 +254,12 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   const nav = (await page.locator("#nav a span").allTextContents()).join(",");
   ok(nav === "Início,Estoque,Comprar,Gastos,Ajustes", "menu de baixo: " + nav);
   await page.goto(BASE + "?local=1#/catalogo");
-  ok(await page.locator("#nav a.on span").textContent() === "Estoque" && await page.locator('.abas a.on').textContent() === "Catálogo", "Catálogo fica dentro de Estoque (aba)");
+  ok(await page.locator('#nav a[aria-current="page"] span').textContent() === "Estoque" && await page.locator('.abas a.on').textContent() === "Catálogo", "Catálogo fica dentro de Estoque (aba)");
   await page.click('.abas a[href="#/inventario"]');
   await page.waitForSelector("text=Anote quanto tem");
   ok(true, "aba Inventário abre o inventário");
   await page.goto(BASE + "?local=1#/relatorio");
-  ok(await page.locator("#nav a.on span").textContent() === "Gastos" && await page.locator(".abas a").count() === 3, "Relatório fica dentro de Gastos (aba)");
+  ok(await page.locator('#nav a[aria-current="page"] span').textContent() === "Gastos" && await page.locator(".abas a").count() === 3, "Relatório fica dentro de Gastos (aba)");
   await page.click('.abas a[href="#/precos"]');
   await page.waitForSelector("h1 >> text=Comparar preços");
   ok(true, "aba Preços abre a comparação");
@@ -268,6 +268,30 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   ok(aj.includes("Planejamento") && aj.includes("Lojas") && aj.includes("Cópia de segurança") && await page.locator(".menu-mais a").count() === 3, "Ajustes só com configurações");
   await page.goto(BASE + "?local=1#/lista");
   ok(await page.locator('[data-acao="iniciar-compra"]').count() === 1 && await page.locator('[data-acao="compra-passada"]').count() === 1, "Comprar mostra a lista e os botões de compra");
+
+  // moldura igual ao Minhas Finanças: bolinha da nuvem, tema, versão
+  await page.goto(BASE + "?local=1#/ajustes");
+  ok(await page.locator(".topo h1 .mtop-sync.local").count() === 1, "bolinha da nuvem ao lado do título (modo local)");
+  ok((await page.textContent("#tela")).includes("Modo local (só neste aparelho)"), "Ajustes mostra a situação da nuvem");
+  ok(/Versão \d+\.\d+\.\d+ · \d\d\/\d\d\/\d{4}/.test(await page.textContent("#tela .ver")), "Ajustes mostra a versão e a data");
+  await page.click('#tela [data-acao="tema"][data-v="dark"]');
+  ok(await page.evaluate(() => document.documentElement.dataset.theme === "dark" && localStorage.getItem("mc-tema") === "dark"), "tema escuro aplicado e guardado");
+  ok(await page.evaluate(() => getComputedStyle(document.body).backgroundColor) === "rgb(14, 19, 17)", "fundo escuro igual ao Minhas Finanças");
+  await page.reload(); await page.waitForSelector("h1");
+  ok(await page.evaluate(() => document.documentElement.dataset.theme) === "dark", "tema escuro continua depois de reabrir");
+  await page.click('#tela [data-acao="tema"][data-v="auto"]');
+  ok(await page.evaluate(() => !document.documentElement.dataset.theme), "tema automático segue o aparelho");
+  await page.route("**/version.json*", r => r.fulfill({ contentType: "application/json", body: '{"version":"9.9.9"}' }));
+  await page.evaluate(async () => (await import("/js/mais.js")).checarVersao());
+  ok((await page.textContent("#tela .ver")).includes("Nova versão 9.9.9: atualizar"), "avisa quando há versão nova publicada");
+  await page.unroute("**/version.json*");
+  // computador: menu lateral com grupos, nuvem, tema e versão; sem barra de baixo
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + "?local=1#/relatorio");
+  ok(await page.isVisible("#side") && !(await page.isVisible("#nav")), "computador: menu lateral no lugar da barra de baixo");
+  ok(await page.locator('#side a[aria-current="page"]').textContent() === "Relatório do mês", "menu lateral marca a tela aberta");
+  ok(await page.locator("#side .sync").count() === 1 && await page.locator("#side .theme button").count() === 3 && await page.locator("#side .ver").count() === 1, "menu lateral tem nuvem, tema e versão");
+  await page.setViewportSize({ width: 390, height: 844 });
 
   // celular: nada mais largo que a tela
   for (const r of ["inicio", "estoque", "lista", "comprando", "ajustes", "precos", "relatorio", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {

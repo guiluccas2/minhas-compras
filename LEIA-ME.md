@@ -28,7 +28,9 @@ Endereço: **https://guiluccas2.github.io/minhas-compras/**
 | **Estoque** | abas *Consumo* (anotar usei/abri/acabou), *Inventário* (contar o que tem) e *Catálogo* (itens que vocês usam) |
 | **Comprar** | lista de compras (semanal ou grande); no mercado vira o Modo Compra |
 | **Gastos** | abas *Compras* (histórico), *Relatório* do mês e *Preços* (comparar lojas) |
-| **Ajustes** | planejamento e orçamento, lojas, cópia de segurança, conta |
+| **Ajustes** | planejamento e orçamento, lojas, cópia de segurança, aparência (claro, escuro, automático), conta, situação da nuvem e versão |
+
+No computador, o menu fica na lateral (como no Minhas Finanças), com a situação da nuvem, o tema e a versão no rodapé. No celular, a bolinha ao lado do título mostra a nuvem: verde = salvo, amarela = salvando, vermelha = sem internet ou modo local.
 
 ## Outros recursos
 - **Código de barras:** o botão com o desenho do código, ao lado da busca (Estoque e Modo Compra), abre a câmera. Na primeira vez que um código aparece, escolha qual item ele é; depois ele é reconhecido sozinho. Dá para digitar o código se a câmera não ler.
@@ -52,5 +54,6 @@ Endereço: **https://guiluccas2.github.io/minhas-compras/**
 | `js/extras.js` | Comparar preços, Relatório do mês, leitura de código de barras |
 | `js/mais.js` | Catálogo, Inventário, Ajustes (Lojas, Planejamento, Cópia de segurança, conta) |
 | `js/util.js` | datas, números, avisos, janelas |
+| `version.json` | número da versão publicada (o app avisa quando há uma nova) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | app instalável e funcionamento sem internet |
 | `testes/` | testes automáticos (`bash testes/rodar.sh`) |
