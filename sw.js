@@ -1,8 +1,8 @@
 // Funcionamento sem internet: guarda o app (e o Firebase) no aparelho.
 // Ao publicar versão nova, suba o número de CACHE.
-const CACHE = "minhas-compras-v4";
+const CACHE = "minhas-compras-v5";
 const ARQUIVOS = [
-  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.2.0", "js/app.js?v=1.2.0",
+  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.3.0", "js/app.js?v=1.3.0",
   "js/util.js", "js/extras.js", "js/catalogo.js", "js/dados.js", "js/nuvem.js", "js/config.js", "js/ui.js", "js/telas.js", "js/compra.js", "js/mais.js",
   "icons/icon-192.png", "icons/icon-180.png",
 ];

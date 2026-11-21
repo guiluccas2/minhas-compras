@@ -1,9 +1,10 @@
 // Modo Compra (no mercado), registro de cada item com preço por unidade, finalização e histórico de compras.
 
-import { esc, num, reais, reaisFino, hoje, dataCurta, diaSemana, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, somaDias, tsDeIso, agrupar } from "./util.js";
+import { abas, esc, num, reais, reaisFino, hoje, dataCurta, diaSemana, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, somaDias, tsDeIso, agrupar } from "./util.js";
 import { cfg, itensAtivos, lojas, nomeLoja, porId, salvar, apagar, compras, compraAberta, linhasDaCompra, totalCompra, listaCompras, historicoItem, precoInfo, doTipo, sugestaoTexto, porCategoria } from "./dados.js";
 import { formItem, unTxt, precoTxt } from "./ui.js";
 import { descEmb, ICONE_COD } from "./telas.js";
+import { ABAS_GASTOS } from "./extras.js";
 import { MEDIDAS, NOME_BASE, PAGAMENTOS } from "./catalogo.js";
 
 const NOME_TIPO = { semanal: "Semanal", grande: "Compra grande", avulsa: "Avulsa" };
@@ -275,8 +276,9 @@ export function telaCompras() {
   const nomeMes = m => { const [a, mm] = m.split("-"); return ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+mm - 1] + " de " + a; };
   const aberta = compraAberta();
   return `
-  <header class="topo"><div><h1>Compras</h1><p class="sub">${lista.length} compras registradas</p></div><button class="btn mini-btn sec" data-acao="compra-passada">＋ Lançar</button></header>
-  ${aberta ? `<a class="faixa" href="#/comprando">🛒 Compra em andamento em ${esc(nomeLoja(aberta.loja))} · continuar</a>` : `<div class="botoes col"><button class="btn" data-acao="iniciar-compra" data-tipo="semanal">Iniciar Modo Compra</button></div>`}
+  <header class="topo"><div><h1>Compras feitas</h1><p class="sub">${lista.length} compras registradas</p></div><button class="btn mini-btn sec" data-acao="compra-passada">＋ Lançar</button></header>
+  ${abas(ABAS_GASTOS, "compras")}
+  ${aberta ? `<a class="faixa" href="#/comprando">🛒 Compra em andamento em ${esc(nomeLoja(aberta.loja))} · continuar</a>` : ""}
   ${lista.length ? [...porMes].map(([m, cs]) => `<h3 class="secao linha1"><span>${nomeMes(m)}</span><span class="num">${reais(cs.reduce((s, c) => s + totalCompra(c), 0))}</span></h3>
     <div class="cartao lista">${cs.map(c => `<a class="li botao" href="#/compra/${c.id}"><span class="tx"><span class="linha1"><b>${dataCurta(c.data)} · ${esc(nomeLoja(c.loja))}</b><span class="num">${reais(totalCompra(c))}</span></span>
       <span class="sub">${NOME_TIPO[c.tipo] || ""} · ${linhasDaCompra(c.id).length} itens${c.pag ? " · " + esc(c.pag) : ""}${c.por ? " · " + esc(c.por) : ""}${c.fin === "pendente" || c.fin === "revisar" ? ` · <span class="pend">${NOME_FIN[c.fin]}</span>` : ""}</span></span></a>`).join("")}</div>`).join("") : `<p class="vazio">Nenhuma compra registrada ainda.</p>`}`;

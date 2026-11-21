@@ -1,6 +1,6 @@
 // Telas: Início, Estoque, Lista de compras e Ficha do item.
 
-import { esc, num, pluralizar, reais, reaisFino, hoje, dataCurta, dataExtenso, diasEntre, diaSemana, norm, aviso, abrirJanela, fecharJanela, lerNum, $, quandoRel, isoDeTs, agrupar } from "./util.js";
+import { abas, esc, num, pluralizar, reais, reaisFino, hoje, dataCurta, dataExtenso, diasEntre, diaSemana, norm, aviso, abrirJanela, fecharJanela, lerNum, $, quandoRel, isoDeTs, agrupar } from "./util.js";
 import { cfg, itensAtivos, situacao, listaCompras, sugestaoTexto, resumoMes, vencendo, proxSemanal, proxGrande, porId, historicoItem, movsItem, precoInfo, nomeLoja, salvar, apagar, doTipo, compraAberta, estado } from "./dados.js";
 import { nuvem } from "./nuvem.js";
 import { cartaoItem, selo, qtdTxt, abrirConsumo, formItem, unTxt, precoTxt } from "./ui.js";
@@ -8,6 +8,7 @@ import { CATEGORIAS, LOCAIS, NOME_BASE, TIPOS_LOJA } from "./catalogo.js";
 import { precosItemHtml, codigosItemHtml } from "./extras.js";
 
 export const ICONE_COD = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>`;
+export const ABAS_ESTOQUE = [["estoque", "Consumo"], ["inventario", "Inventário"], ["catalogo", "Catálogo"]];
 export const filtros = { busca: "", grupo: "Tudo", sit: "todos", listaTipo: "semanal", listaLoja: "todas" };
 
 // ================= INÍCIO =================
@@ -85,6 +86,7 @@ export function telaEstoque(params) {
   const porLocal = agrupar(lista, i => filtros.grupo === "Tudo" ? i.local : "");
   return `
   <header class="topo"><div><h1>Estoque</h1><p class="sub">${total} itens · ${nAcabou} acabaram</p></div><button class="btn mini-btn" data-acao="novo-item">＋ Item</button></header>
+  ${abas(ABAS_ESTOQUE, "estoque")}
   <div class="busca com-botao"><input id="busca" type="search" placeholder="Buscar item…" value="${esc(filtros.busca)}" aria-label="Buscar item"><button class="btn sec" data-acao="ler-codigo" data-ctx="estoque" aria-label="Ler código de barras" title="Ler código de barras">${ICONE_COD}</button></div>
   <div class="chips rolar">${grupos.map(g => `<button class="chip ${g === filtros.grupo ? "on" : ""}" data-grupo="${esc(g)}">${esc(g)}</button>`).join("")}</div>
   <div class="chips">${[["todos", "Todos"], ["acabou", "Acabou"], ["acabando", "Acabando"], ["tem", "Tem"], ["sem", "Sem registro"]].map(([k, v]) => `<button class="chip peq ${k === filtros.sit ? "on" : ""}" data-sit="${k}">${v}</button>`).join("")}</div>
@@ -121,7 +123,8 @@ export function telaLista(params) {
     return `<div class="li"><div class="tx"><div class="linha1"><a class="nome" href="#/item/${x.item.id}">${esc(x.item.nome)}</a><span class="pill ${cls}">${txt}</span></div><span class="sub">${x.sug ? "sugestão: " + esc(sugestaoTexto(x.item, x.sug)) + " · " : ""}${ult}</span></div>${x.manual ? `<button class="mini" data-acao="tirar-lista" data-id="${x.manual.id}" aria-label="Tirar da lista">✕</button>` : ""}</div>`;
   }).join("")}</div>
   <div class="kpi linha1"><span class="sub">Estimativa pelos últimos preços</span><b>${reais(estimativa)}</b></div>` : `<p class="vazio">Nada para comprar nesta lista por enquanto.</p>`}
-  <div class="botoes col">${aberta ? `<a class="btn" href="#/comprando">Continuar a compra em ${esc(nomeLoja(aberta.loja))}</a>` : `<button class="btn" data-acao="iniciar-compra" data-tipo="${tipo}">Iniciar Modo Compra</button>`}</div>`;
+  <div class="botoes col">${aberta ? `<a class="btn" href="#/comprando">Continuar a compra em ${esc(nomeLoja(aberta.loja))}</a>` : `<button class="btn" data-acao="iniciar-compra" data-tipo="${tipo}">Iniciar Modo Compra</button>
+    <button class="btn sec" data-acao="compra-passada">Lançar uma compra já feita</button>`}</div>`;
 }
 
 export function anotarNaLista() {

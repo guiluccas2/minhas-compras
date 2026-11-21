@@ -1,7 +1,7 @@
 // Início do app: carrega dados, liga a nuvem, desenha as telas e trata os toques.
 
 import { $, aviso, esc, fecharJanela, debounce } from "./util.js";
-import { carregarLocal, aoMudar, salvar, apagar, porId, precisaSemear, estado, CFG_PADRAO, REG } from "./dados.js";
+import { carregarLocal, aoMudar, salvar, apagar, porId, precisaSemear, estado, CFG_PADRAO, REG, compraAberta } from "./dados.js";
 import { catalogoSugerido, LOJAS_INICIAIS } from "./catalogo.js";
 import { iniciarNuvem, entrar, nuvem, sair } from "./nuvem.js";
 import { acaoRapida, formItem } from "./ui.js";
@@ -15,9 +15,9 @@ const main = $("#tela");
 const NAV = [
   ["inicio", "Início", "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"],
   ["estoque", "Estoque", "M4 7h16v13H4zM2 3h20v4H2zM9 11h6"],
-  ["lista", "Lista", "M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"],
-  ["comprando", "Comprar", "M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20.5h.01M17 20.5h.01"],
-  ["mais", "Mais", "M5 12h.01M12 12h.01M19 12h.01"],
+  ["lista", "Comprar", "M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2M9 20.5h.01M17 20.5h.01"],
+  ["compras", "Gastos", "M4 20V10M10 20V4M16 20v-7M22 20H2"],
+  ["ajustes", "Ajustes", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"],
 ];
 let autorizado = false;
 
@@ -29,7 +29,8 @@ function rota() {
 }
 
 function desenharNav(ativo) {
-  const mapa = { precos: "mais", relatorio: "mais", item: "estoque", catalogo: "mais", inventario: "mais", lojas: "mais", config: "mais", backup: "mais", compras: "mais", compra: "mais" };
+  // telas que acendem cada botão do menu de baixo
+  const mapa = { item: "estoque", inventario: "estoque", catalogo: "estoque", comprando: "lista", compra: "compras", relatorio: "compras", precos: "compras", mais: "ajustes", lojas: "ajustes", config: "ajustes", backup: "ajustes" };
   const at = mapa[ativo] || ativo;
   $("#nav").innerHTML = NAV.map(([k, nome, d]) => `<a href="#/${k}" class="${k === at ? "on" : ""}" ${k === at ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg><span>${nome}</span></a>`).join("");
 }
@@ -38,10 +39,12 @@ function desenhar() {
   if (!autorizado) return;
   const r = rota();
   const telas = {
-    inicio: telaInicio, estoque: () => telaEstoque(r.params), lista: () => telaLista(r.params), item: () => telaItem(r.id),
-    comprando: telaComprando, compras: telaCompras, compra: () => telaCompra(r.id),
+    inicio: telaInicio, estoque: () => telaEstoque(r.params), item: () => telaItem(r.id),
+    // "Comprar": com uma compra em andamento mostra direto o Modo Compra (que já traz o que falta da lista)
+    lista: () => compraAberta() ? telaComprando() : telaLista(r.params),
+    comprando: () => compraAberta() ? telaComprando() : telaLista(r.params), compras: telaCompras, compra: () => telaCompra(r.id),
     precos: telaPrecos, relatorio: () => telaRelatorio(r.params),
-    mais: telaMais, catalogo: telaCatalogo, inventario: telaInventario, lojas: telaLojas, config: telaConfig, backup: telaBackup,
+    ajustes: telaMais, mais: telaMais, catalogo: telaCatalogo, inventario: telaInventario, lojas: telaLojas, config: telaConfig, backup: telaBackup,
   };
   const fn = telas[r.nome] || telaInicio;
   // guarda o foco/posição de campos de busca para não atrapalhar quem está digitando

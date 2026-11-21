@@ -71,6 +71,9 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   await page.selectOption("#fc-loja", "lj-atacadao");
   await page.click("#fc button.btn");
   await page.waitForSelector("text=Falta pegar");
+  await page.goto(BASE + "?local=1#/lista");
+  await page.waitForSelector("text=Falta pegar");
+  ok(await page.locator("#nav a.on span").textContent() === "Comprar", "com compra em andamento, o botão Comprar abre direto o Modo Compra");
   await page.click('[data-acao="linha-nova"][data-id="it-cafe-em-po"]');
   await page.fill("#ln-qtd", "2");
   await page.fill("#ln-cada", "18,90");
@@ -246,8 +249,28 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   });
   ok(envio.antes > 100 && envio.enviados === envio.antes && envio.depois === 0, `pendentes enviados ao ligar a nuvem (${envio.enviados} de ${envio.antes})`);
 
+  // menu reorganizado: 5 botões, abas nas telas irmãs, nada mais escondido em "Mais"
+  await page.goto(BASE + "?local=1#/inicio");
+  const nav = (await page.locator("#nav a span").allTextContents()).join(",");
+  ok(nav === "Início,Estoque,Comprar,Gastos,Ajustes", "menu de baixo: " + nav);
+  await page.goto(BASE + "?local=1#/catalogo");
+  ok(await page.locator("#nav a.on span").textContent() === "Estoque" && await page.locator('.abas a.on').textContent() === "Catálogo", "Catálogo fica dentro de Estoque (aba)");
+  await page.click('.abas a[href="#/inventario"]');
+  await page.waitForSelector("text=Anote quanto tem");
+  ok(true, "aba Inventário abre o inventário");
+  await page.goto(BASE + "?local=1#/relatorio");
+  ok(await page.locator("#nav a.on span").textContent() === "Gastos" && await page.locator(".abas a").count() === 3, "Relatório fica dentro de Gastos (aba)");
+  await page.click('.abas a[href="#/precos"]');
+  await page.waitForSelector("h1 >> text=Comparar preços");
+  ok(true, "aba Preços abre a comparação");
+  await page.goto(BASE + "?local=1#/ajustes");
+  const aj = await page.textContent("#tela");
+  ok(aj.includes("Planejamento") && aj.includes("Lojas") && aj.includes("Cópia de segurança") && await page.locator(".menu-mais a").count() === 3, "Ajustes só com configurações");
+  await page.goto(BASE + "?local=1#/lista");
+  ok(await page.locator('[data-acao="iniciar-compra"]').count() === 1 && await page.locator('[data-acao="compra-passada"]').count() === 1, "Comprar mostra a lista e os botões de compra");
+
   // celular: nada mais largo que a tela
-  for (const r of ["inicio", "estoque", "lista", "comprando", "mais", "precos", "relatorio", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {
+  for (const r of ["inicio", "estoque", "lista", "comprando", "ajustes", "precos", "relatorio", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {
     await page.goto(BASE + "?local=1#/" + r);
     await page.waitForTimeout(80);
     const w = await page.evaluate(() => document.documentElement.scrollWidth);

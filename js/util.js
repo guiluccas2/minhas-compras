@@ -117,3 +117,8 @@ export function agrupar(lista, chaveFn) {
   return m;
 }
 export function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// Abas no alto da tela (ligam telas irmãs, ex.: Estoque · Inventário · Catálogo).
+export function abas(lista, ativo) {
+  return `<nav class="abas" style="--n:${lista.length}">${lista.map(([rota, nome]) => `<a href="#/${rota}" class="${rota === ativo ? "on" : ""}" ${rota === ativo ? 'aria-current="page"' : ""}>${esc(nome)}</a>`).join("")}</nav>`;
+}

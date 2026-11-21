@@ -26,7 +26,7 @@ PWA em JavaScript puro (módulos ES, sem build), publicado no GitHub Pages (`htt
 |---|---|
 | Tipo de registro novo | `salvar`/`doTipo` (dados.js), cópia de segurança (`mais.js`), e o Minhas Finanças se ele ler esse tipo |
 | Campo da compra usado pelo financeiro (`data`, `loja`, `pag`, `ajuste`, `fin`, `totalCompra`) | a caixa “Compras a lançar” do Minhas Finanças |
-| Tela nova | rota em `desenhar()` (app.js), `NAV`/mapa de menu, `sw.js` (`ARQUIVOS`), teste de 390 px em `testes/teste-app.js` |
+| Tela nova | rota em `desenhar()` (app.js), `NAV`/mapa de menu (5 botões: Início, Estoque, Comprar, Gastos, Ajustes; telas irmãs usam `abas()` de util.js: `ABAS_ESTOQUE` em telas.js, `ABAS_GASTOS` em extras.js), `sw.js` (`ARQUIVOS`), teste de 390 px em `testes/teste-app.js` |
 | Arquivo JS novo | `sw.js` (`ARQUIVOS`) e linha no `LEIA-ME.md` |
 | Categorias, locais, medidas | `js/catalogo.js` (itens antigos guardam o nome da categoria/local) |
 

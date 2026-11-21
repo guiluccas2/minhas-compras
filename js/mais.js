@@ -1,27 +1,23 @@
 // Menu "Mais": Catálogo, Inventário, Lojas, Planejamento (configurações), Cópia de segurança e Conta.
 
-import { esc, num, hoje, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, dataCurta, NOMES_SEMANA, agrupar, reais } from "./util.js";
+import { abas, esc, num, hoje, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, dataCurta, NOMES_SEMANA, agrupar, reais } from "./util.js";
 import { cfg, itens, itensAtivos, lojas, salvar, situacao, REG, vivos, porId, linhasDaCompra, comprasFeitas, nomeLoja, totalCompra, estado } from "./dados.js";
 import { formItem, unTxt, qtdTxt, anotar } from "./ui.js";
+import { ABAS_ESTOQUE } from "./telas.js";
 import { CATEGORIAS, LOCAIS, TIPOS_LOJA } from "./catalogo.js";
 import { nuvem, sair } from "./nuvem.js";
 
-export const VERSAO = "1.2.0";
+export const VERSAO = "1.3.0";
 const filtroCat = { q: "" };
 
 export function telaMais() {
-  const n = itensAtivos().length;
-  return `<header class="topo"><h1>Mais</h1></header>
+  return `<header class="topo"><div><h1>Ajustes</h1><p class="sub">Configurações que vocês mudam de vez em quando.</p></div></header>
   <nav class="menu-mais">
-    <a href="#/catalogo"><b>Catálogo de itens</b><span class="sub">${n} em uso de ${itens().length} · editar, esconder, cadastrar</span></a>
-    <a href="#/inventario"><b>Inventário</b><span class="sub">contar o que tem em casa, cômodo por cômodo</span></a>
-    <a href="#/compras"><b>Histórico de compras</b><span class="sub">todas as compras, por mês</span></a>
-    <a href="#/relatorio"><b>Relatório do mês</b><span class="sub">gasto por categoria e loja, preços que subiram, desperdício</span></a>
-    <a href="#/precos"><b>Comparar preços</b><span class="sub">em qual loja cada item sai mais barato</span></a>
+    <a href="#/config"><b>Planejamento e orçamento</b><span class="sub">dia da compra semanal, compra grande, orçamento do mês</span></a>
     <a href="#/lojas"><b>Lojas</b><span class="sub">${lojas().filter(l => l.ativo !== false).length} lojas cadastradas</span></a>
-    <a href="#/config"><b>Planejamento e orçamento</b><span class="sub">dia da compra semanal, compra grande, orçamento</span></a>
     <a href="#/backup"><b>Cópia de segurança</b><span class="sub">baixar os dados ou a planilha das compras</span></a>
   </nav>
+  <p class="dica">Procurando outra coisa? <b>Catálogo</b> e <b>Inventário</b> ficam em <a href="#/estoque">Estoque</a>; <b>histórico de compras</b>, <b>relatório do mês</b> e <b>comparar preços</b> ficam em <a href="#/compras">Gastos</a>.</p>
   <div class="cartao">
     ${nuvem.modo === "firebase" && nuvem.usuario ? `<div class="linha1"><span><b>${esc(nuvem.usuario.nome)}</b><br><span class="sub">${esc(nuvem.usuario.email)}</span></span><button class="btn sec mini-btn" data-acao="sair">Sair</button></div>
     <span class="sub">Sincronização: ${({ ok: "em dia", enviando: "enviando…", offline: "sem internet (envia quando voltar)" })[estado.sync] || estado.sync}</span>`
@@ -36,7 +32,8 @@ export function telaCatalogo() {
   const lista = itens().filter(i => !q || norm(i.nome).includes(q));
   const porCat = agrupar(lista, i => i.cat);
   const ordem = CATEGORIAS.map(c => c.nome).filter(c => porCat.has(c)).concat([...porCat.keys()].filter(k => !CATEGORIAS.some(c => c.nome === k)));
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Catálogo</h1><p class="sub">Desmarque o que vocês não usam. Toque no nome para editar.</p></div><button class="btn mini-btn" data-acao="novo-item">＋ Item</button></header>
+  return `<header class="topo"><div><h1>Catálogo</h1><p class="sub">Desmarque o que vocês não usam. Toque no nome para editar.</p></div><button class="btn mini-btn" data-acao="novo-item">＋ Item</button></header>
+  ${abas(ABAS_ESTOQUE, "catalogo")}
   <div class="busca"><input id="busca-cat" type="search" placeholder="Buscar no catálogo…" value="${esc(filtroCat.q)}" aria-label="Buscar no catálogo"></div>
   ${ordem.map(cat => `<h3 class="secao">${esc(cat)}</h3><div class="cartao lista">${porCat.get(cat).map(i => `<div class="li ${i.ativo === false ? "apagado" : ""}">
     <input type="checkbox" class="chk" data-acao="ativo-item" data-id="${i.id}" ${i.ativo !== false ? "checked" : ""} aria-label="Usamos ${esc(i.nome)}">
@@ -50,7 +47,8 @@ export function telaInventario() {
   const locs = LOCAIS.filter(l => itensAtivos().some(i => i.local === l));
   if (!inv.local || !locs.includes(inv.local)) inv.local = locs[0] || "";
   const its = itensAtivos().filter(i => i.local === inv.local);
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Inventário</h1><p class="sub">Anote quanto tem de cada item. Deixe em branco o que não quiser mudar.</p></div></header>
+  return `<header class="topo"><div><h1>Inventário</h1><p class="sub">Anote quanto tem de cada item. Deixe em branco o que não quiser mudar.</p></div></header>
+  ${abas(ABAS_ESTOQUE, "inventario")}
   <div class="chips rolar">${locs.map(l => `<button class="chip ${l === inv.local ? "on" : ""}" data-inv-local="${esc(l)}">${esc(l)}</button>`).join("")}</div>
   <form id="finv" class="cartao lista">
     ${its.map(i => {
@@ -88,7 +86,7 @@ export function salvarInventario() {
 
 // ---------- Lojas ----------
 export function telaLojas() {
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Lojas</h1></div><button class="btn mini-btn" data-acao="nova-loja">＋ Loja</button></header>
+  return `<header class="topo"><div><a class="voltar" href="#/ajustes">← Ajustes</a><h1>Lojas</h1></div><button class="btn mini-btn" data-acao="nova-loja">＋ Loja</button></header>
   <div class="cartao lista">${lojas().map(l => {
     const cs = comprasFeitas().filter(c => c.loja === l.id);
     return `<button class="li botao ${l.ativo === false ? "apagado" : ""}" data-acao="editar-loja" data-id="${l.id}"><span class="tx"><b>${esc(l.nome)}</b><span class="sub">${esc(l.cidade || "")}${l.tipo ? " · " + esc(l.tipo) : ""}${l.obs ? " · " + esc(l.obs) : ""} · ${cs.length} compra${cs.length === 1 ? "" : "s"}${cs.length ? " · última " + dataCurta(cs[0].data) : ""}</span></span></button>`;
@@ -114,7 +112,7 @@ export function formLoja(id) {
 // ---------- Planejamento ----------
 export function telaConfig() {
   const c = cfg();
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Planejamento</h1></div></header>
+  return `<header class="topo"><div><a class="voltar" href="#/ajustes">← Ajustes</a><h1>Planejamento</h1></div></header>
   <form id="fcfg" class="form cartao">
     <label class="campo"><span>Dia da compra semanal (perecíveis)</span><select id="cf-dia">${NOMES_SEMANA.map((d, i) => `<option value="${i}" ${i === Number(c.semanalDia) ? "selected" : ""}>${d}</option>`).join("")}</select></label>
     <div class="dois">
@@ -135,7 +133,7 @@ export function salvarConfig() {
 
 // ---------- Cópia de segurança ----------
 export function telaBackup() {
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Cópia de segurança</h1></div></header>
+  return `<header class="topo"><div><a class="voltar" href="#/ajustes">← Ajustes</a><h1>Cópia de segurança</h1></div></header>
   <div class="cartao"><b>Os dados já ficam guardados na nuvem</b><span class="sub">e também neste aparelho. Mesmo assim, de vez em quando vale baixar uma cópia.</span></div>
   <div class="botoes col">
     <button class="btn" data-acao="baixar-json">Baixar cópia completa (.json)</button>

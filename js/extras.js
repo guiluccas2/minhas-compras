@@ -1,9 +1,10 @@
 // Telas e recursos da fase 3: comparação de preços entre lojas, relatório do mês e leitura de código de barras.
 
-import { esc, num, reais, reaisFino, hoje, dataCurta, norm, aviso, abrirJanela, fecharJanela, $, lerNum } from "./util.js";
+import { abas, esc, num, reais, reaisFino, hoje, dataCurta, norm, aviso, abrirJanela, fecharJanela, $, lerNum } from "./util.js";
 import { comparativoLojas, precosPorLoja, relatorioMes, nomeLoja, itensAtivos, itemPorCodigo, salvar, porId } from "./dados.js";
 import { NOME_BASE } from "./catalogo.js";
 
+export const ABAS_GASTOS = [["compras", "Compras"], ["relatorio", "Relatório"], ["precos", "Preços"]];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const nomeMes = m => { const [a, mm] = m.split("-"); const t = `${MESES[+mm - 1]} de ${a}`; return t[0].toUpperCase() + t.slice(1); };
 const somaMes = (m, k) => { const [a, mm] = m.split("-").map(Number); const d = new Date(a, mm - 1 + k, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
@@ -16,7 +17,8 @@ export function telaPrecos() {
   const r = comparativoLojas(90);
   const q = norm(fPreco.q);
   const lista = r.itens.filter(x => !q || norm(x.item.nome).includes(q));
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Comparar preços</h1><p class="sub">Preço por litro, quilo, metro ou unidade na compra mais recente de cada loja (últimos 12 meses).</p></div></header>
+  return `<header class="topo"><div><h1>Comparar preços</h1><p class="sub">Preço por litro, quilo, metro ou unidade na compra mais recente de cada loja (últimos 12 meses).</p></div></header>
+  ${abas(ABAS_GASTOS, "precos")}
   ${r.itens.length ? `
   <div class="kpis">
     <div class="kpi"><span class="sub">Economia possível (90 dias)</span><b>${reais(r.economia)}</b><span class="sub">comprando cada item na loja mais barata</span></div>
@@ -47,7 +49,8 @@ export function telaRelatorio(params) {
     return lista.map(x => `<div class="barra-lin"><span class="bl-nome">${nomeFn(x)}</span><span class="bl-trilho"><b style="width:${Math.max(2, (x.v / max) * 100)}%"></b></span><span class="bl-v num">${reais(x.v)}</span></div>`).join("");
   };
   const dif = ant.total ? r.total / ant.total - 1 : null;
-  return `<header class="topo"><div><a class="voltar" href="#/mais">← Mais</a><h1>Relatório do mês</h1></div></header>
+  return `<header class="topo"><div><h1>Relatório do mês</h1></div></header>
+  ${abas(ABAS_GASTOS, "relatorio")}
   <div class="mesnav"><a class="mini" href="#/relatorio?m=${somaMes(mes, -1)}" aria-label="Mês anterior">‹</a><b>${nomeMes(mes)}</b>${mes < hoje().slice(0, 7) ? `<a class="mini" href="#/relatorio?m=${somaMes(mes, 1)}" aria-label="Próximo mês">›</a>` : `<span class="mini" style="visibility:hidden">›</span>`}</div>
   ${r.compras.length ? `
   <div class="kpis">
