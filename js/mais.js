@@ -8,7 +8,7 @@ import { CATEGORIAS, LOCAIS, TIPOS_LOJA } from "./catalogo.js";
 import { nuvem, sair } from "./nuvem.js";
 
 // versão do app: mudar aqui e em version.json a cada atualização publicada
-export const VERSAO = "1.4.1";
+export const VERSAO = "1.4.2";
 export const DATA_VERSAO = "21/11/2026";
 const filtroCat = { q: "" };
 
