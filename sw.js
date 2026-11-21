@@ -1,14 +1,14 @@
 // Funcionamento sem internet: guarda o app (e o Firebase) no aparelho.
 // Ao publicar versão nova, suba o número de CACHE.
-const CACHE = "minhas-compras-v6";
+const CACHE = "minhas-compras-v7";
 const ARQUIVOS = [
-  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.4.0", "js/app.js?v=1.4.0",
-  "js/util.js", "js/extras.js", "js/catalogo.js", "js/dados.js", "js/nuvem.js", "js/config.js", "js/ui.js", "js/telas.js", "js/compra.js", "js/mais.js",
+  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.4.1", "js/app.js?v=1.4.1",
+  "js/util.js?v=1.4.1", "js/extras.js?v=1.4.1", "js/catalogo.js?v=1.4.1", "js/dados.js?v=1.4.1", "js/nuvem.js?v=1.4.1", "js/config.js?v=1.4.1", "js/ui.js?v=1.4.1", "js/telas.js?v=1.4.1", "js/compra.js?v=1.4.1", "js/mais.js?v=1.4.1",
   "icons/icon-192.png", "icons/icon-180.png",
 ];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
@@ -29,8 +29,10 @@ self.addEventListener("fetch", e => {
     return;
   }
   if (url.origin !== location.origin) return; // banco de dados e login vão direto
-  // Arquivos do app: tenta a rede (versão nova) e cai para a cópia guardada sem internet
-  e.respondWith(fetch(req).then(r => {
+  // Arquivos do app: tenta a rede (versão nova) e cai para a cópia guardada sem internet.
+  // "no-cache" confere com o site se o arquivo mudou (o GitHub Pages manda guardar por 10 min,
+  // o que misturava arquivos novos e antigos logo depois de publicar).
+  e.respondWith(fetch(req, { cache: "no-cache" }).then(r => {
     if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
     return r;
   }).catch(() => caches.match(req, { ignoreSearch: false }).then(r => r || caches.match("index.html"))));

@@ -31,11 +31,11 @@ PWA em JavaScript puro (módulos ES, sem build), publicado no GitHub Pages (`htt
 | Tipo de registro novo | `salvar`/`doTipo` (dados.js), cópia de segurança (`mais.js`), e o Minhas Finanças se ele ler esse tipo |
 | Campo da compra usado pelo financeiro (`data`, `loja`, `pag`, `ajuste`, `fin`, `totalCompra`) | a caixa “Compras a lançar” do Minhas Finanças |
 | Tela nova | rota em `desenhar()` (app.js), `NAV`/mapa de menu (5 botões: Início, Estoque, Comprar, Gastos, Ajustes; telas irmãs usam `abas()` de util.js: `ABAS_ESTOQUE` em telas.js, `ABAS_GASTOS` em extras.js), `sw.js` (`ARQUIVOS`), teste de 390 px em `testes/teste-app.js` |
-| Arquivo JS novo | `sw.js` (`ARQUIVOS`) e linha no `LEIA-ME.md` |
+| Arquivo JS novo | `sw.js` (`ARQUIVOS`), `importmap` do `index.html` e linha no `LEIA-ME.md` |
 | Categorias, locais, medidas | `js/catalogo.js` (itens antigos guardam o nome da categoria/local) |
 
 ## Antes de publicar
 1. `bash testes/rodar.sh` (Playwright já instalado; tudo ✔). Teste novo para cada funcionalidade nova.
 2. Celular: tudo cabe em 390 px; avisos e botões sem cobrir a tela.
-3. Versão: trocar `?v=` em `index.html` e `sw.js`, `VERSAO` e `DATA_VERSAO` em `js/mais.js` + `version.json` (o app compara e mostra “Nova versão: atualizar”), subir `CACHE` em `sw.js`.
+3. Versão: trocar **todos** os `?v=` em `index.html` (inclusive o mapa `importmap`, que dá endereço novo a cada arquivo JS) e em `sw.js`, `VERSAO` e `DATA_VERSAO` em `js/mais.js` + `version.json` (o app compara e mostra “Nova versão: atualizar”), subir `CACHE` em `sw.js`.
 4. Commit e push na `main` (o GitHub Pages publica sozinho).

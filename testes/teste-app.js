@@ -293,6 +293,21 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   ok(await page.locator("#side .sync").count() === 1 && await page.locator("#side .theme button").count() === 3 && await page.locator("#side .ver").count() === 1, "menu lateral tem nuvem, tema e versão");
   await page.setViewportSize({ width: 390, height: 844 });
 
+  // arquivo antigo misturado com o novo (cache do navegador) → em vez de travar em "Carregando…", oferece atualizar
+  {
+    const p2 = await ctx.newPage();
+    await p2.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+    await p2.route(/\/js\/mais\.js/, r => r.fulfill({ contentType: "text/javascript", body: "export const VERSAO = '0';" }));
+    await p2.goto(BASE + "?local=1#/inicio");
+    await p2.waitForSelector("#socorro", { timeout: 5000 }).catch(() => {});
+    ok(await p2.locator("#socorro").count() === 1, "app que não abre mostra o botão Atualizar o app");
+    await p2.unroute(/\/js\/mais\.js/);
+    await p2.click("#socorro");
+    await p2.waitForSelector(".topo h1", { timeout: 8000 }).catch(() => {});
+    ok(await p2.locator(".topo h1").count() === 1, "Atualizar o app abre a versão nova");
+    await p2.close();
+  }
+
   // celular: nada mais largo que a tela
   for (const r of ["inicio", "estoque", "lista", "comprando", "ajustes", "precos", "relatorio", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {
     await page.goto(BASE + "?local=1#/" + r);

@@ -18,7 +18,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/app.css?v=1.4.0">
+<link rel="stylesheet" href="css/app.css?v=1.4.1">
 </head>
 <body>
 <div class="app">
@@ -26,6 +26,45 @@
   <main id="tela" class="tela"><p class="vazio">Carregando…</p></main>
   <nav id="nav" class="bnav" aria-label="Navegação"></nav>
 </div>
-<script type="module" src="js/app.js?v=1.4.0"></script>
+<script>
+  // Socorro: se o app não terminar de abrir (ex.: o aparelho misturou arquivos da versão anterior com os da nova),
+  // mostra um botão que apaga a cópia guardada e abre a versão nova.
+  (function () {
+    function socorro() {
+      var t = document.getElementById("tela");
+      if (!t || t.textContent.trim() !== "Carregando…") return;
+      t.innerHTML = '<div class="login"><div class="cartao"><h2>O app não terminou de abrir</h2>' +
+        '<p class="sub">Provavelmente o aparelho guardou partes da versão anterior. Toque no botão para buscar a versão nova (os dados não se perdem).</p>' +
+        '<button class="btn" id="socorro">Atualizar o app</button></div></div>';
+      document.getElementById("socorro").onclick = limpar;
+    }
+    async function limpar() {
+      try {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        for (var i = 0; i < regs.length; i++) await regs[i].unregister();
+        var ks = await caches.keys();
+        for (var j = 0; j < ks.length; j++) await caches.delete(ks[j]);
+      } catch (e) {}
+      var q = new URLSearchParams(location.search); q.set("atualizar", Date.now()); location.replace(location.pathname + "?" + q + location.hash);
+    }
+    window.__socorroApp = socorro;
+    addEventListener("error", function (e) { if (!e.target || !e.target.tagName || e.target.tagName === "SCRIPT") setTimeout(socorro, 300); }, true);
+    setTimeout(socorro, 20000);
+  })();
+</script>
+<!-- cada versão usa endereços novos para todos os arquivos: o navegador nunca mistura versão nova com antiga -->
+<script type="importmap">{ "imports": {
+  "./js/util.js": "./js/util.js?v=1.4.1",
+  "./js/extras.js": "./js/extras.js?v=1.4.1",
+  "./js/catalogo.js": "./js/catalogo.js?v=1.4.1",
+  "./js/dados.js": "./js/dados.js?v=1.4.1",
+  "./js/nuvem.js": "./js/nuvem.js?v=1.4.1",
+  "./js/config.js": "./js/config.js?v=1.4.1",
+  "./js/ui.js": "./js/ui.js?v=1.4.1",
+  "./js/telas.js": "./js/telas.js?v=1.4.1",
+  "./js/compra.js": "./js/compra.js?v=1.4.1",
+  "./js/mais.js": "./js/mais.js?v=1.4.1"
+} }</script>
+<script type="module" src="js/app.js?v=1.4.1"></script>
 </body>
 </html>
