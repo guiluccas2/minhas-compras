@@ -5,7 +5,9 @@ import { cfg, itensAtivos, situacao, listaCompras, sugestaoTexto, resumoMes, ven
 import { nuvem } from "./nuvem.js";
 import { cartaoItem, selo, qtdTxt, abrirConsumo, formItem, unTxt, precoTxt } from "./ui.js";
 import { CATEGORIAS, LOCAIS, NOME_BASE, TIPOS_LOJA } from "./catalogo.js";
+import { precosItemHtml, codigosItemHtml } from "./extras.js";
 
+export const ICONE_COD = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>`;
 export const filtros = { busca: "", grupo: "Tudo", sit: "todos", listaTipo: "semanal", listaLoja: "todas" };
 
 // ================= INÍCIO =================
@@ -59,7 +61,8 @@ export function telaInicio() {
   <div class="botoes col">
     <a class="btn" href="#/lista">Ver lista de compras</a>
     <a class="btn sec" href="#/estoque">Anotar consumo</a>
-  </div>`;
+  </div>
+  ${r.compras.length ? `<a class="link centro" href="#/relatorio">Ver o relatório de ${["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"][+hoje().slice(5, 7) - 1]} →</a>` : ""}`;
 }
 
 // ================= ESTOQUE =================
@@ -82,7 +85,7 @@ export function telaEstoque(params) {
   const porLocal = agrupar(lista, i => filtros.grupo === "Tudo" ? i.local : "");
   return `
   <header class="topo"><div><h1>Estoque</h1><p class="sub">${total} itens · ${nAcabou} acabaram</p></div><button class="btn mini-btn" data-acao="novo-item">＋ Item</button></header>
-  <div class="busca"><input id="busca" type="search" placeholder="Buscar item…" value="${esc(filtros.busca)}" aria-label="Buscar item"></div>
+  <div class="busca com-botao"><input id="busca" type="search" placeholder="Buscar item…" value="${esc(filtros.busca)}" aria-label="Buscar item"><button class="btn sec" data-acao="ler-codigo" data-ctx="estoque" aria-label="Ler código de barras" title="Ler código de barras">${ICONE_COD}</button></div>
   <div class="chips rolar">${grupos.map(g => `<button class="chip ${g === filtros.grupo ? "on" : ""}" data-grupo="${esc(g)}">${esc(g)}</button>`).join("")}</div>
   <div class="chips">${[["todos", "Todos"], ["acabou", "Acabou"], ["acabando", "Acabando"], ["tem", "Tem"], ["sem", "Sem registro"]].map(([k, v]) => `<button class="chip peq ${k === filtros.sit ? "on" : ""}" data-sit="${k}">${v}</button>`).join("")}</div>
   ${lista.length ? [...porLocal].map(([loc, its]) => `${loc ? `<h3 class="secao">${esc(loc)}</h3>` : ""}<div class="lista-cartoes">${its.map(cartaoItem).join("")}</div>`).join("") : `<p class="vazio">Nenhum item encontrado.${q ? ` <button class="link" data-acao="novo-item" data-nome="${esc(filtros.busca)}">Cadastrar “${esc(filtros.busca)}”</button>` : ""}</p>`}`;
@@ -163,12 +166,14 @@ export function telaItem(id) {
     <div class="kpi"><span class="sub">Melhor preço (12 meses)</span><b>${melhor ? reaisFino(precoInfo(melhor).porBase) : "—"}</b><span class="sub">${melhor ? `por ${NOME_BASE[base]} · ${esc(nomeLoja(melhor.loja))}` : "sem compras"}</span></div>
   </div>
   ${comBase.length > 1 ? grafico(comBase.slice().reverse(), base) : ""}
+  ${precosItemHtml(id)}
   <h3 class="secao">Compras</h3>
   ${hist.length ? `<div class="cartao lista">${hist.slice(0, 30).map(h => `<div class="li"><div class="tx"><div class="linha1"><b>${dataCurta(h.data)} · ${esc(nomeLoja(h.loja))}</b><span class="num">${reais(h.preco)}</span></div>
     <span class="sub">${h.marca ? esc(h.marca) + " · " : ""}${esc(descEmb(h))}${precoTxt(h) ? " · " + precoTxt(h) : ""}${h.promo ? ` · <span class="promo">promoção</span>` : ""}</span></div></div>`).join("")}</div>` : `<p class="vazio">Nenhuma compra registrada.</p>`}
   <h3 class="secao">Anotações recentes</h3>
   ${movs.length ? `<div class="cartao lista">${movs.map(m => `<div class="li"><div class="tx"><div class="linha1"><span>${quandoRel(isoDeTs(m.ts))} · ${tipoMov[m.tipo] || m.tipo}${m.tipo === "usei" || m.tipo === "contagem" ? " " + num(m.q, 2) : m.tipo === "status" ? ": " + esc(m.q) : ""}</span><button class="mini" data-acao="apagar-mov" data-id="${m.id}" aria-label="Apagar anotação">✕</button></div><span class="sub">${m.por ? esc(m.por) : ""}</span></div></div>`).join("")}</div>` : `<p class="vazio">Nenhuma anotação ainda.</p>`}
-  ${it.obs ? `<p class="sub">Obs.: ${esc(it.obs)}</p>` : ""}`;
+  ${it.obs ? `<p class="sub">Obs.: ${esc(it.obs)}</p>` : ""}
+  ${codigosItemHtml(it)}`;
 }
 
 export function descEmb(l) {

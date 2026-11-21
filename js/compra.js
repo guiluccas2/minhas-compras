@@ -1,9 +1,9 @@
 // Modo Compra (no mercado), registro de cada item com preço por unidade, finalização e histórico de compras.
 
 import { esc, num, reais, reaisFino, hoje, dataCurta, diaSemana, norm, aviso, abrirJanela, fecharJanela, confirmar, lerNum, $, $$, somaDias, tsDeIso, agrupar } from "./util.js";
-import { cfg, itensAtivos, lojas, nomeLoja, porId, salvar, apagar, compras, compraAberta, linhasDaCompra, totalCompra, listaCompras, historicoItem, precoInfo, doTipo, sugestaoTexto } from "./dados.js";
+import { cfg, itensAtivos, lojas, nomeLoja, porId, salvar, apagar, compras, compraAberta, linhasDaCompra, totalCompra, listaCompras, historicoItem, precoInfo, doTipo, sugestaoTexto, porCategoria } from "./dados.js";
 import { formItem, unTxt, precoTxt } from "./ui.js";
-import { descEmb } from "./telas.js";
+import { descEmb, ICONE_COD } from "./telas.js";
 import { MEDIDAS, NOME_BASE, PAGAMENTOS } from "./catalogo.js";
 
 const NOME_TIPO = { semanal: "Semanal", grande: "Compra grande", avulsa: "Avulsa" };
@@ -15,8 +15,9 @@ export function gravarTotal(c) {
   if (!c || c.status !== "fim") return;
   const total = Math.round(totalCompra(c) * 100) / 100;
   const n = linhasDaCompra(c.id).length;
-  if (c.total === total && c.nItens === n) return;
-  c.total = total; c.nItens = n;
+  const pc = porCategoria(c);
+  if (c.total === total && c.nItens === n && JSON.stringify(c.porCat || {}) === JSON.stringify(pc)) return;
+  c.total = total; c.nItens = n; c.porCat = pc;
   if (c.fin === "lancado" && c.finValor != null && Math.round(total * 100) !== c.finValor) c.fin = "revisar";
   else if (c.fin === "revisar" && Math.round(total * 100) === c.finValor) c.fin = "lancado";
   salvar(c);
@@ -59,7 +60,7 @@ export function telaComprando() {
   const total = totalCompra(c);
   return `
   <header class="topo"><div><h1>${esc(nomeLoja(c.loja))}</h1><p class="sub">${NOME_TIPO[c.tipo] || ""} · ${c.data === hoje() ? "hoje" : dataCurta(c.data)} · ${linhas.length} no carrinho</p></div><span class="pill p-verde grande num" id="total-carrinho">${reais(total)}</span></header>
-  <div class="busca"><input id="busca-compra" type="search" placeholder="Pegar outro item… (buscar)" value="${esc(buscaCompra.q)}" autocomplete="off" aria-label="Buscar item para o carrinho"></div>
+  <div class="busca com-botao"><input id="busca-compra" type="search" placeholder="Pegar outro item… (buscar)" value="${esc(buscaCompra.q)}" autocomplete="off" aria-label="Buscar item para o carrinho"><button class="btn sec" data-acao="ler-codigo" data-ctx="compra" aria-label="Ler código de barras" title="Ler código de barras">${ICONE_COD}</button></div>
   ${q ? `<div class="cartao lista">${achados.map(i => `<button class="li botao" data-acao="linha-nova" data-id="${i.id}"><span class="tx"><b>${esc(i.nome)}</b><span class="sub">${noCarrinho.has(i.id) ? "já no carrinho · " : ""}${ultimaTxt(i)}</span></span><span class="mais-ico">＋</span></button>`).join("")}
     <button class="li botao" data-acao="cadastrar-e-pegar" data-nome="${esc(buscaCompra.q)}"><span class="tx"><b>Cadastrar “${esc(buscaCompra.q)}”</b><span class="sub">item novo no catálogo</span></span><span class="mais-ico">＋</span></button></div>` : ""}
   <h3 class="secao">Falta pegar (${faltam.length})</h3>
@@ -242,6 +243,7 @@ export function finalizarCompra() {
     c.fin = "pendente";
     c.total = Math.round((soma + c.ajuste) * 100) / 100;
     c.nItens = linhasDaCompra(c.id).length;
+    c.porCat = porCategoria(c);
     salvar(c);
     // tira da lista o que foi comprado
     const comprados = new Set(linhasDaCompra(c.id).map(l => l.item));

@@ -7,6 +7,8 @@ import { iniciarNuvem, entrar, nuvem, sair } from "./nuvem.js";
 import { acaoRapida, formItem } from "./ui.js";
 import { telaInicio, telaEstoque, telaLista, telaItem, filtros, anotarNaLista } from "./telas.js";
 import { telaComprando, telaCompras, telaCompra, iniciarCompra, abrirLinha, finalizarCompra, cancelarCompra, editarCompra, excluirCompra, escolherItemPara, cadastrarEPegar, buscaCompra } from "./compra.js";
+import { telaPrecos, buscaPrecos, telaRelatorio, lerCodigo, tratarCodigo } from "./extras.js";
+import { abrirConsumo } from "./ui.js";
 import { telaMais, telaCatalogo, ligarBuscaCatalogo, telaInventario, trocarLocalInventario, salvarInventario, telaLojas, formLoja, telaConfig, salvarConfig, telaBackup, baixarJson, baixarCsv, restaurar, sairDaConta } from "./mais.js";
 
 const main = $("#tela");
@@ -27,7 +29,7 @@ function rota() {
 }
 
 function desenharNav(ativo) {
-  const mapa = { item: "estoque", catalogo: "mais", inventario: "mais", lojas: "mais", config: "mais", backup: "mais", compras: "mais", compra: "mais" };
+  const mapa = { precos: "mais", relatorio: "mais", item: "estoque", catalogo: "mais", inventario: "mais", lojas: "mais", config: "mais", backup: "mais", compras: "mais", compra: "mais" };
   const at = mapa[ativo] || ativo;
   $("#nav").innerHTML = NAV.map(([k, nome, d]) => `<a href="#/${k}" class="${k === at ? "on" : ""}" ${k === at ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg><span>${nome}</span></a>`).join("");
 }
@@ -38,6 +40,7 @@ function desenhar() {
   const telas = {
     inicio: telaInicio, estoque: () => telaEstoque(r.params), lista: () => telaLista(r.params), item: () => telaItem(r.id),
     comprando: telaComprando, compras: telaCompras, compra: () => telaCompra(r.id),
+    precos: telaPrecos, relatorio: () => telaRelatorio(r.params),
     mais: telaMais, catalogo: telaCatalogo, inventario: telaInventario, lojas: telaLojas, config: telaConfig, backup: telaBackup,
   };
   const fn = telas[r.nome] || telaInicio;
@@ -83,6 +86,8 @@ document.addEventListener("click", async e => {
     case "add-linha-compra": return escolherItemPara(d.id);
     case "fin-de-novo": { const c = porId(d.id); c.fin = "pendente"; salvar(c); aviso("A compra voltou para “Compras a lançar” do Minhas Finanças"); return; }
     case "apagar-mov": { const m = porId(d.id); if (m) { apagar(m); aviso("Anotação apagada"); } return; }
+    case "ler-codigo": return lerCodigo(cod => tratarCodigo(cod, it => d.ctx === "compra" ? abrirLinha({ itemId: it.id }) : abrirConsumo(it)));
+    case "tirar-codigo": { const it = porId(d.id); it.codigos = (it.codigos || []).filter(c => c !== d.v); salvar(it); aviso("Código retirado"); return; }
     case "nova-loja": return formLoja(null);
     case "editar-loja": return formLoja(d.id);
     case "salvar-inventario": salvarInventario(); return desenhar();
@@ -102,6 +107,7 @@ document.addEventListener("input", e => {
   if (t.id === "busca") { filtros.busca = t.value; desenhar(); }
   else if (t.id === "busca-compra") { buscaCompra.q = t.value; desenhar(); }
   else if (t.id === "busca-cat") { ligarBuscaCatalogo(t.value); desenhar(); }
+  else if (t.id === "busca-precos") { buscaPrecos(t.value); desenhar(); }
 });
 document.addEventListener("submit", e => {
   if (e.target.id === "fcfg") { e.preventDefault(); salvarConfig(); }

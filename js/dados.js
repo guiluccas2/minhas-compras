@@ -212,6 +212,8 @@ function calcularSituacao(item) {
       case "abri": aberto = true; if (est == null) est = 1; status = "tem"; break;
       case "acabou": est = Math.max(0, antes - 1); aberto = false; consumos.push({ ts: e.ts, q: antes - est }); break;
       case "zerou": est = 0; aberto = false; consumos.push({ ts: e.ts, q: antes }); break;
+      // venceu / estragou: sai do estoque, mas não conta como consumo (não distorce a previsão)
+      case "perdi": est = Math.max(0, antes - (Number(e.q) || 1)); if (est === 0) aberto = false; break;
       case "contagem": {
         const v = Math.max(0, Number(e.q) || 0);
         if (est != null && v < est) consumos.push({ ts: e.ts, q: est - v });
@@ -372,3 +374,139 @@ export function vencendo(dias = 5) {
 
 // Primeiro acesso: grava catálogo, lojas e configuração
 export function precisaSemear() { return !porId("cfg"); }
+
+// ---------- Valor de cada categoria dentro de uma compra ----------
+// Soma os itens por categoria do catálogo e reparte o ajuste (desconto/acréscimo no caixa) proporcionalmente.
+// Usado pelo Minhas Finanças para dividir a compra (campo porCat da compra) e pelo relatório do mês.
+export function porCategoria(c) {
+  const soma = new Map();
+  for (const l of linhasDaCompra(c.id)) {
+    const cat = porId(l.item)?.cat || "Outros";
+    soma.set(cat, (soma.get(cat) || 0) + (Number(l.preco) || 0));
+  }
+  const bruto = [...soma.values()].reduce((a, b) => a + b, 0);
+  const total = Math.round((bruto + (Number(c.ajuste) || 0)) * 100);
+  if (!bruto) return {};
+  const out = {};
+  let usado = 0, maior = null;
+  for (const [cat, v] of soma) {
+    const cent = Math.round((v / bruto) * total);
+    out[cat] = cent; usado += cent;
+    if (!maior || v > soma.get(maior)) maior = cat;
+  }
+  out[maior] += total - usado; // sobra do arredondamento
+  for (const k of Object.keys(out)) out[k] = out[k] / 100;
+  return out;
+}
+
+// ---------- Preços por loja ----------
+// Para cada loja: a compra mais recente do item (últimos 12 meses) e o preço por unidade-base.
+export function precosPorLoja(itemId) {
+  const ano = Date.now() - 365 * DIA;
+  const m = new Map();
+  for (const h of historicoItem(itemId)) {
+    if (h.ts < ano || m.has(h.loja)) continue;
+    const p = precoInfo(h);
+    const v = isFinite(p.porBase) ? p.porBase : p.porUn;
+    if (!isFinite(v) || v <= 0) continue;
+    m.set(h.loja, { loja: h.loja, valor: v, base: isFinite(p.porBase) ? p.base : "un", linha: h });
+  }
+  // só compara lojas na mesma unidade-base da compra mais recente
+  const lista = [...m.values()];
+  const base = lista[0]?.base;
+  return lista.filter(x => x.base === base).sort((a, b) => a.valor - b.valor);
+}
+
+// Comparativo geral: itens com preço em 2+ lojas, loja mais barata e economia possível
+export function comparativoLojas(dias = 90) {
+  return memo("comparativo" + dias, () => {
+    const itensCmp = [];
+    const vitorias = new Map();
+    for (const it of itens()) {
+      const ps = precosPorLoja(it.id);
+      if (ps.length < 2) continue;
+      const [mais, ...resto] = ps;
+      const pior = resto[resto.length - 1];
+      itensCmp.push({ item: it, precos: ps, dif: pior.valor / mais.valor - 1 });
+      vitorias.set(mais.loja, (vitorias.get(mais.loja) || 0) + 1);
+    }
+    itensCmp.sort((a, b) => b.dif - a.dif);
+    // quanto teria economizado nos últimos N dias comprando cada item na loja mais barata
+    const desde = Date.now() - dias * DIA;
+    let economia = 0, gastoCmp = 0;
+    for (const x of itensCmp) {
+      const melhor = x.precos[0];
+      for (const h of historicoItem(x.item.id)) {
+        if (h.ts < desde || h.loja === melhor.loja) continue;
+        const p = precoInfo(h);
+        const q = melhor.base === "un" ? p.unidades : p.qBase;
+        const pago = Number(h.preco) || 0;
+        gastoCmp += pago;
+        if (q && pago > q * melhor.valor) economia += pago - q * melhor.valor;
+      }
+    }
+    const ranking = [...vitorias].map(([loja, n]) => ({ loja, n })).sort((a, b) => b.n - a.n);
+    return { itens: itensCmp, ranking, economia, gastoCmp, dias };
+  });
+}
+
+// ---------- Relatório do mês ----------
+export function relatorioMes(mes) {
+  return memo("rel" + mes, () => {
+    const doMes = comprasFeitas().filter(c => c.data.slice(0, 7) === mes);
+    const total = doMes.reduce((s, c) => s + totalCompra(c), 0);
+    const idas = new Set(doMes.map(c => c.data + "|" + c.loja)).size;
+    const porCat = new Map(), porLoja = new Map(), porItem = new Map();
+    for (const c of doMes) {
+      for (const [cat, v] of Object.entries(porCategoria(c))) porCat.set(cat, (porCat.get(cat) || 0) + v);
+      porLoja.set(c.loja, (porLoja.get(c.loja) || 0) + totalCompra(c));
+      for (const l of linhasDaCompra(c.id)) porItem.set(l.item, (porItem.get(l.item) || 0) + (Number(l.preco) || 0));
+    }
+    // variação de preço: cada compra do mês contra a compra anterior do mesmo item
+    const variacoes = [];
+    const vistos = new Set();
+    for (const c of doMes) for (const l of linhasDaCompra(c.id)) {
+      if (vistos.has(l.item)) continue;
+      const hist = historicoItem(l.item);
+      const i = hist.findIndex(h => h.id === l.id);
+      const ant = hist.slice(i + 1).find(h => precoInfo(h).base === precoInfo(l).base);
+      if (i < 0 || !ant) continue;
+      const a = precoInfo(ant), n = precoInfo(hist[i]);
+      const va = isFinite(a.porBase) ? a.porBase : a.porUn, vn = isFinite(n.porBase) ? n.porBase : n.porUn;
+      if (!(va > 0 && vn > 0)) continue;
+      vistos.add(l.item);
+      variacoes.push({ item: porId(l.item), antes: va, agora: vn, pct: vn / va - 1, base: n.base, promo: !!hist[i].promo });
+    }
+    variacoes.sort((a, b) => b.pct - a.pct);
+    // desperdício: anotações "venceu / estragou", pelo preço da última compra antes da perda
+    const perdas = [];
+    for (const m of doTipo("mov")) {
+      if (m.tipo !== "perdi" || (m.data || isoDeTs(m.ts)).slice(0, 7) !== mes) continue;
+      const it = porId(m.item);
+      if (!it) continue;
+      const h = historicoItem(it.id).find(x => x.ts <= m.ts) || historicoItem(it.id)[0];
+      const un = h ? precoInfo(h).porUn : NaN;
+      perdas.push({ item: it, q: Number(m.q) || 1, valor: isFinite(un) ? un * (Number(m.q) || 1) : 0, data: m.data || isoDeTs(m.ts) });
+    }
+    const ordenar = m => [...m].map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v);
+    return {
+      mes, compras: doMes, total, idas, media: idas ? total / idas : 0,
+      porCat: ordenar(porCat), porLoja: ordenar(porLoja),
+      topItens: ordenar(porItem).slice(0, 10).map(x => ({ item: porId(x.k), v: x.v })).filter(x => x.item),
+      altas: variacoes.filter(v => v.pct > 0.005).slice(0, 10),
+      baixas: variacoes.filter(v => v.pct < -0.005).sort((a, b) => a.pct - b.pct).slice(0, 5),
+      perdas, perdaTotal: perdas.reduce((s, p) => s + p.valor, 0),
+    };
+  });
+}
+
+// ---------- Código de barras ----------
+export function itemPorCodigo(cod) {
+  const c = String(cod || "").trim();
+  if (!c) return null;
+  return memo("porCodigo", () => {
+    const m = new Map();
+    for (const it of itens()) for (const k of it.codigos || []) m.set(String(k), it);
+    return m;
+  }).get(c) || null;
+}

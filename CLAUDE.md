@@ -15,6 +15,10 @@ PWA em JavaScript puro (módulos ES, sem build), publicado no GitHub Pages (`htt
 - Toda gravação passa por `salvar()` / `apagar()` (dados.js). Apagar = `del: true` (a exclusão precisa chegar ao outro aparelho). Gravação local: IndexedDB + cópia síncrona no localStorage ao fechar o app. Registros gravados sem nuvem ficam em `PENDENTES` e sobem quando a nuvem liga.
 - Sincronização (`js/nuvem.js`): escuta só o que mudou desde `estado.ultimoServidor` (campo `upd` = horário do servidor). Não troque por leitura da coleção inteira (gasta a cota gratuita).
 - Cálculos repetidos usam `memo()` (zera a cada alteração). Nada de `filter`/`find` na coleção inteira dentro de laços: use os índices (`historicoItem`, `movsItem`, `linhasDaCompra`).
+- Anotação `perdi` (venceu / estragou): baixa o estoque mas **não** entra no consumo (não distorce a previsão); vira “desperdício” no relatório.
+- Compra finalizada guarda também `porCat` (valor por categoria do catálogo, com o ajuste do caixa repartido; `porCategoria()`), usado pelo Minhas Finanças para dividir a compra. Renomear categoria muda as chaves do `porCat` das compras novas e o mapa `comprasCatMap` do financeiro.
+- Código de barras: `item.codigos` (lista). Leitor em `js/extras.js` (`lerCodigo` com a biblioteca html5-qrcode 2.3.8 do jsDelivr, carregada só quando usada; `window.__codigoTeste` simula a leitura nos testes). Código desconhecido → escolher o item e guardar.
+- Comparar preços (`#/precos`, `comparativoLojas`) e relatório do mês (`#/relatorio?m=AAAA-MM`, `relatorioMes`) em `js/extras.js`.
 - Preço por unidade: `precoInfo(linha)` (ml→L, g→kg; `MEDIDAS` em catalogo.js). Lista de compras: `listaCompras("semanal" | "grande")`.
 
 ## Mapa de dependências

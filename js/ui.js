@@ -79,6 +79,7 @@ export function anotar(item, tipo, q, { data } = {}) {
     zerou: `${item.nome}: acabou tudo`,
     contagem: `${item.nome}: contagem ${num(q, 2)} ${unTxt(item, q)}`,
     status: `${item.nome}: ${q}`,
+    perdi: `Anotado: ${plural(q || 1, unTxt(item, 1), unTxt(item, 2))} de ${item.nome} venceu/estragou`,
   }[tipo];
   avisoComDesfazer(txt);
   return mov;
@@ -112,7 +113,8 @@ export function abrirConsumo(item) {
     corpo = `<div class="botoes col">
       <button class="btn" data-c="status" data-v="tem">Tem em casa</button>
       <button class="btn sec" data-c="status" data-v="acabando">Está acabando</button>
-      <button class="btn perigo" data-c="status" data-v="acabou">Acabou (vai para a lista)</button></div>`;
+      <button class="btn perigo" data-c="status" data-v="acabou">Acabou (vai para a lista)</button>
+      <button class="btn sec" data-c="perdi">Venceu / estragou (jogou fora)</button></div>`;
   } else {
     const un = unTxt(item, 2);
     corpo = `<div class="botoes col">
@@ -120,6 +122,7 @@ export function abrirConsumo(item) {
       <button class="btn perigo" data-c="acabou">Acabou ${esc(unTxt(item, 1))} aberto(a)</button>` :
       `<div class="campo-inline"><label for="cq">Usei</label><input id="cq" inputmode="decimal" value="1"><span>${esc(un)}</span><button class="btn" data-c="usei">Anotar</button></div>`}
       <button class="btn perigo sec" data-c="zerou">Acabou tudo (estoque zerado)</button>
+      <button class="btn sec" data-c="perdi">Venceu / estragou${item.modo === "un" ? " (a quantidade acima)" : " (1 " + esc(unTxt(item, 1)) + ")"}</button>
     </div>
     <details class="mais"><summary>Corrigir a quantidade em casa (contagem)</summary>
       <div class="campo-inline"><label for="cc">Temos</label><input id="cc" inputmode="decimal" value="${s.est != null ? num(s.estimado ?? s.est, 1) : ""}" placeholder="0"><span>${esc(un)}</span><button class="btn sec" data-c="contagem">Salvar</button></div>
@@ -142,8 +145,10 @@ export function abrirConsumo(item) {
       if (tipo === "contagem") q = lerNum($("#cc", el).value);
       if ((tipo === "usei" || tipo === "contagem") && !(q >= 0)) return aviso("Digite um número válido", "erro");
       if (tipo === "zerou") q = 0;
+      if (tipo === "perdi") q = item.modo === "un" ? lerNum($("#cq", el)?.value) || 1 : 1;
       fecharJanela();
       anotar(item, tipo, q, { data });
+      if (tipo === "perdi" && item.modo === "status") salvar({ t: "mov", item: item.id, tipo: "status", q: "acabou", ts: Date.now() + 1, data });
     }
     if (e.target.closest("a.link")) fecharJanela();
   });

@@ -162,11 +162,77 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   await page.waitForSelector("h1");
   ok(await page.locator(".faixa").count() === 0, "compra cancelada não volta depois de recarregar");
 
+  // ===== fase 3 =====
+  // C. valor por categoria guardado na compra (para o Minhas Finanças dividir)
+  const pc = await page.evaluate(async () => { const d = await import("/js/dados.js"); return d.comprasFeitas()[0].porCat; });
+  const somaPc = Object.values(pc || {}).reduce((a, b) => a + b, 0);
+  ok(pc && pc["Mercearia"] && pc["Higiene"] && pc["Carnes"] && Math.abs(somaPc - 170) < 0.001, `compra guarda o valor por categoria, somando o total pago (${JSON.stringify(pc)})`);
+
+  // B. segunda compra de papel higiênico em outra loja, mais cara
+  await page.goto(BASE + "?local=1#/comprando");
+  await page.click('[data-acao="iniciar-compra"]');
+  await page.selectOption("#fc-loja", "lj-tauste");
+  await page.click("#fc button.btn");
+  await page.fill("#busca-compra", "papel hig");
+  await page.click('[data-acao="linha-nova"][data-id="it-papel-higienico"]');
+  await page.fill("#ln-qtd", "1"); await page.fill("#ln-por", "24"); await page.fill("#ln-cont", "30"); await page.fill("#ln-cada", "47,90");
+  await page.waitForTimeout(50);
+  await page.click("#fln button.btn:not(.perigo)");
+  await page.waitForTimeout(120);
+  await page.click('[data-acao="finalizar-compra"]');
+  await page.click("#ff button.btn");
+  await page.waitForSelector("text=Total pago");
+  await page.goto(BASE + "?local=1#/precos");
+  await page.waitForTimeout(100);
+  const precosTxt = (await page.textContent("#tela")).replace(/\u00a0/g, " ");
+  ok(precosTxt.includes("Papel higiênico") && precosTxt.includes("Mais vezes a mais barata") && precosTxt.includes("Atacadão"), "comparar preços mostra o papel higiênico e o Atacadão como mais barato");
+  ok(/Economia possível[^R]*R\$ 8,00/.test(precosTxt), "economia possível calculada (R$ 47,90 − 720 m × R$ 0,0554 = R$ 8,00)");
+  await page.goto(BASE + "?local=1#/item/it-papel-higienico");
+  ok(await page.locator("text=Preço por loja").count() === 1, "ficha do item mostra o preço por loja");
+
+  // E. relatório do mês
+  await page.goto(BASE + "?local=1#/relatorio");
+  await page.waitForTimeout(100);
+  const rel = (await page.textContent("#tela")).replace(/\u00a0/g, " ");
+  ok(rel.includes("R$ 217,90") && rel.includes("Higiene") && rel.includes("Carnes") && rel.includes("Tauste"), "relatório do mês: total (170 + 47,90), categorias e lojas");
+  ok(/Preços que mais subiram[\s\S]*Papel higiênico[\s\S]*\+20%/.test(rel), "relatório mostra o papel higiênico 20% mais caro");
+
+  // D. código de barras: código novo → escolhe o item → guarda; depois abre direto
+  await page.goto(BASE + "?local=1#/estoque");
+  await page.evaluate(() => { window.__codigoTeste = "7891234567895"; });
+  await page.click('[data-acao="ler-codigo"]');
+  await page.waitForSelector("text=Código novo");
+  await page.fill("#vc-b", "detergente");
+  await page.click('#vc-l [data-i="it-detergente"]');
+  await page.waitForTimeout(150);
+  ok((await page.textContent(".jconteudo h3")) === "Detergente", "código novo ligado ao Detergente abre a anotação de consumo");
+  await page.click(".jfechar");
+  await page.click('[data-acao="ler-codigo"]');
+  await page.waitForTimeout(200);
+  ok((await page.textContent(".jconteudo h3")) === "Detergente", "mesmo código lido de novo abre o Detergente direto");
+  // venceu / estragou (desperdício)
+  await page.click('[data-c="perdi"]');
+  await page.waitForTimeout(120);
+  await page.goto(BASE + "?local=1#/relatorio");
+  ok(await page.locator(".li >> text=Detergente · 1").count() === 1, "venceu/estragou aparece no desperdício do relatório");
+  // Modo Compra: código abre a janela de preço
+  await page.goto(BASE + "?local=1#/comprando");
+  await page.click('[data-acao="iniciar-compra"]');
+  await page.click("#fc button.btn");
+  await page.click('[data-acao="ler-codigo"]');
+  await page.waitForTimeout(200);
+  ok(await page.locator("#fln").count() === 1 && (await page.textContent(".jconteudo h3")) === "Detergente", "no Modo Compra, o código abre a janela de preço do item");
+  await page.click(".jfechar");
+  await page.click('[data-acao="cancelar-compra"]');
+  await page.click('[data-r="1"]');
+  await page.evaluate(() => { delete window.__codigoTeste; });
+  await page.waitForTimeout(100);
+
   // persistência após recarregar
   await page.goto(BASE + "?local=1#/item/it-papel-higienico");
   await page.reload();
   await page.waitForSelector(".cartao b");
-  ok((await page.textContent(".cartao b")).includes("58 rolos"), "dados continuam após recarregar");
+  ok((await page.textContent(".cartao b")).includes("82 rolos"), "dados continuam após recarregar (58 + 24 da segunda compra)");
 
   // anotações feitas sem nuvem ficam pendentes e são enviadas quando a nuvem liga
   const envio = await page.evaluate(async () => {
@@ -181,7 +247,7 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   ok(envio.antes > 100 && envio.enviados === envio.antes && envio.depois === 0, `pendentes enviados ao ligar a nuvem (${envio.enviados} de ${envio.antes})`);
 
   // celular: nada mais largo que a tela
-  for (const r of ["inicio", "estoque", "lista", "comprando", "mais", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {
+  for (const r of ["inicio", "estoque", "lista", "comprando", "mais", "precos", "relatorio", "catalogo", "inventario", "lojas", "config", "compras", "item/it-papel-higienico"]) {
     await page.goto(BASE + "?local=1#/" + r);
     await page.waitForTimeout(80);
     const w = await page.evaluate(() => document.documentElement.scrollWidth);

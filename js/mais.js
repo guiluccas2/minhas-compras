@@ -6,7 +6,7 @@ import { formItem, unTxt, qtdTxt, anotar } from "./ui.js";
 import { CATEGORIAS, LOCAIS, TIPOS_LOJA } from "./catalogo.js";
 import { nuvem, sair } from "./nuvem.js";
 
-export const VERSAO = "1.1.0";
+export const VERSAO = "1.2.0";
 const filtroCat = { q: "" };
 
 export function telaMais() {
@@ -16,6 +16,8 @@ export function telaMais() {
     <a href="#/catalogo"><b>Catálogo de itens</b><span class="sub">${n} em uso de ${itens().length} · editar, esconder, cadastrar</span></a>
     <a href="#/inventario"><b>Inventário</b><span class="sub">contar o que tem em casa, cômodo por cômodo</span></a>
     <a href="#/compras"><b>Histórico de compras</b><span class="sub">todas as compras, por mês</span></a>
+    <a href="#/relatorio"><b>Relatório do mês</b><span class="sub">gasto por categoria e loja, preços que subiram, desperdício</span></a>
+    <a href="#/precos"><b>Comparar preços</b><span class="sub">em qual loja cada item sai mais barato</span></a>
     <a href="#/lojas"><b>Lojas</b><span class="sub">${lojas().filter(l => l.ativo !== false).length} lojas cadastradas</span></a>
     <a href="#/config"><b>Planejamento e orçamento</b><span class="sub">dia da compra semanal, compra grande, orçamento</span></a>
     <a href="#/backup"><b>Cópia de segurança</b><span class="sub">baixar os dados ou a planilha das compras</span></a>

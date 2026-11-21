@@ -198,3 +198,21 @@ details.mais summary { cursor: pointer; color: var(--verde); font-weight: 700; p
 .erro-box { background: var(--verm-c); color: var(--verm); padding: 10px 12px; border-radius: 10px; font-weight: 600; margin: 0; }
 
 @media (max-width: 380px) { .tres { grid-template-columns: 1fr 1fr; } .kpi > b { font-size: 1.2rem; } }
+
+/* fase 3: leitor, relatório, comparação */
+.busca.com-botao { display: flex; gap: 8px; }
+.busca.com-botao input { flex: 1; min-width: 0; }
+.busca.com-botao .btn { min-height: 46px; padding: 8px 12px; flex: none; }
+.leitor { width: 100%; min-height: 220px; border-radius: 12px; overflow: hidden; background: var(--cinza-c); display: grid; place-items: center; }
+.leitor video { width: 100% !important; height: auto !important; }
+.codigo { font-family: ui-monospace, monospace; background: var(--cinza-c); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.mesnav { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mesnav b { font-family: var(--f-tit); font-size: 1.1rem; }
+.mesnav .mini { text-decoration: none; display: inline-grid; place-items: center; font-size: 1.2rem; }
+.barra-lin { display: grid; grid-template-columns: minmax(0, 9em) 1fr auto; gap: 8px; align-items: center; font-size: .9rem; }
+.bl-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bl-nome a { text-decoration: none; }
+.bl-trilho { height: 10px; background: var(--cinza-c); border-radius: 6px; overflow: hidden; }
+.bl-trilho b { display: block; height: 100%; background: var(--verde); border-radius: 6px; }
+.bl-v { font-weight: 600; }
+a.link.centro { display: block; text-align: center; text-decoration: none; }

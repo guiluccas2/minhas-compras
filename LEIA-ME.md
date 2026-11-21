@@ -21,6 +21,13 @@ Endereço: **https://guiluccas2.github.io/minhas-compras/**
 4. **Mais → Planejamento**: confira o dia da compra semanal (domingo), a cada quantos dias é a compra grande e a data da próxima.
 5. No mercado, use **Comprar** (Modo Compra): toque no item, digite quantidade e preço; o app mostra o preço por unidade e compara com a última compra. Ao finalizar, o estoque é atualizado.
 
+## Outros recursos
+- **Código de barras:** o botão com o desenho do código, ao lado da busca (Estoque e Modo Compra), abre a câmera. Na primeira vez que um código aparece, escolha qual item ele é; depois ele é reconhecido sozinho. Dá para digitar o código se a câmera não ler.
+- **Venceu / estragou:** na anotação de consumo (botão ⋯ do item). Tira do estoque sem atrapalhar a previsão e entra como desperdício no relatório.
+- **Mais → Comparar preços:** em qual loja cada item sai mais barato (por litro, quilo, metro ou unidade) e quanto daria para economizar.
+- **Mais → Relatório do mês:** gasto por categoria e por loja, itens com mais gasto, preços que subiram ou caíram, desperdício e comparação com o mês anterior.
+- **Minhas Finanças:** cada compra finalizada aparece lá em “Compras a lançar”, com a opção de dividir por categoria.
+
 ## Arquivos
 | Arquivo | O que é |
 |---|---|
@@ -33,6 +40,7 @@ Endereço: **https://guiluccas2.github.io/minhas-compras/**
 | `js/ui.js` | peças de tela: cartão do item, anotar consumo, cadastro do item |
 | `js/telas.js` | Início, Estoque, Lista, Ficha do item |
 | `js/compra.js` | Modo Compra, preços, histórico de compras |
+| `js/extras.js` | Comparar preços, Relatório do mês, leitura de código de barras |
 | `js/mais.js` | Catálogo, Inventário, Lojas, Planejamento, Cópia de segurança |
 | `js/util.js` | datas, números, avisos, janelas |
 | `sw.js`, `manifest.webmanifest`, `icons/` | app instalável e funcionamento sem internet |

@@ -1,9 +1,9 @@
 // Funcionamento sem internet: guarda o app (e o Firebase) no aparelho.
 // Ao publicar versão nova, suba o número de CACHE.
-const CACHE = "minhas-compras-v3";
+const CACHE = "minhas-compras-v4";
 const ARQUIVOS = [
-  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.1.0", "js/app.js?v=1.1.0",
-  "js/util.js", "js/catalogo.js", "js/dados.js", "js/nuvem.js", "js/config.js", "js/ui.js", "js/telas.js", "js/compra.js", "js/mais.js",
+  "./", "index.html", "manifest.webmanifest", "css/app.css?v=1.2.0", "js/app.js?v=1.2.0",
+  "js/util.js", "js/extras.js", "js/catalogo.js", "js/dados.js", "js/nuvem.js", "js/config.js", "js/ui.js", "js/telas.js", "js/compra.js", "js/mais.js",
   "icons/icon-192.png", "icons/icon-180.png",
 ];
 
@@ -18,7 +18,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   // Firebase (bibliotecas) e fontes: guarda a primeira cópia e usa sempre a guardada
-  if (url.hostname === "www.gstatic.com" || url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com")) {
+  if (url.hostname === "cdn.jsdelivr.net" || url.hostname === "www.gstatic.com" || url.hostname.endsWith("fonts.googleapis.com") || url.hostname.endsWith("fonts.gstatic.com")) {
     e.respondWith(caches.open(CACHE).then(async c => {
       const r = await c.match(req);
       if (r) return r;
