@@ -110,6 +110,27 @@ const ok = (cond, msg) => { console.log((cond ? "✔ " : "✘ ") + msg); if (!co
   await page.waitForSelector("text=Total pago");
   ok((await page.textContent(".kpi b")).includes("170,00"), "total pago com desconto (R$ 170,00)");
 
+  // dados para o Minhas Finanças: total, nº de itens e situação
+  const fin = await page.evaluate(async () => { const d = await import("/js/dados.js"); const c = d.comprasFeitas()[0]; return { id: c.id, total: c.total, n: c.nItens, fin: c.fin }; });
+  ok(fin.total === 170 && fin.n === 3 && fin.fin === "pendente", `compra guarda total/itens para o financeiro (${JSON.stringify(fin)})`);
+  // já lançada no financeiro e depois alterada → volta para revisão
+  await page.evaluate(async (id) => { const d = await import("/js/dados.js"); const c = d.porId(id); c.fin = "lancado"; c.finValor = 17000; d.salvar(c); }, fin.id);
+  await page.goto(BASE + "?local=1#/compra/" + fin.id);
+  await page.click('[data-acao="linha-editar"] >> nth=0');
+  const totalAntes = await page.inputValue("#ln-total");
+  await page.fill("#ln-total", "1,00");
+  await page.click("#fln button.btn:not(.perigo)");
+  await page.waitForTimeout(150);
+  const fin2 = await page.evaluate(async (id) => { const d = await import("/js/dados.js"); const c = d.porId(id); return { fin: c.fin, total: c.total }; }, fin.id);
+  ok(fin2.fin === "revisar", `compra lançada e alterada volta para revisão no financeiro (${JSON.stringify(fin2)})`);
+  ok(await page.locator("text=alterada depois de lançada").count() >= 1, "tela da compra avisa que precisa revisar no financeiro");
+  // desfaz a alteração para os próximos testes
+  await page.click('[data-acao="linha-editar"] >> nth=0');
+  await page.fill("#ln-total", totalAntes);
+  await page.click("#fln button.btn:not(.perigo)");
+  await page.waitForTimeout(150);
+  ok((await page.evaluate(async (id) => (await import("/js/dados.js")).porId(id).fin, fin.id)) === "lancado", "voltando ao valor lançado, sai da revisão");
+
   // estoque atualizado
   await page.goto(BASE + "?local=1#/item/it-papel-higienico");
   ok((await page.textContent(".cartao b")).includes("58 rolos"), "estoque: 10 + 48 = 58 rolos");

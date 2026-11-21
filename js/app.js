@@ -81,6 +81,7 @@ document.addEventListener("click", async e => {
     case "editar-compra": return editarCompra(d.id);
     case "excluir-compra": return excluirCompra(d.id);
     case "add-linha-compra": return escolherItemPara(d.id);
+    case "fin-de-novo": { const c = porId(d.id); c.fin = "pendente"; salvar(c); aviso("A compra voltou para “Compras a lançar” do Minhas Finanças"); return; }
     case "apagar-mov": { const m = porId(d.id); if (m) { apagar(m); aviso("Anotação apagada"); } return; }
     case "nova-loja": return formLoja(null);
     case "editar-loja": return formLoja(d.id);

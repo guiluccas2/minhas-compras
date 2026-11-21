@@ -7,6 +7,20 @@ import { descEmb } from "./telas.js";
 import { MEDIDAS, NOME_BASE, PAGAMENTOS } from "./catalogo.js";
 
 const NOME_TIPO = { semanal: "Semanal", grande: "Compra grande", avulsa: "Avulsa" };
+const NOME_FIN = { pendente: "a lançar no financeiro", lancado: "lançada no financeiro", revisar: "alterada depois de lançada: revisar no financeiro", ignorado: "fora do financeiro" };
+
+// Compra finalizada guarda total e nº de itens (o Minhas Finanças lê só a compra, sem os itens).
+// Se ela já tinha sido lançada no financeiro e o total mudou, volta para revisão lá.
+export function gravarTotal(c) {
+  if (!c || c.status !== "fim") return;
+  const total = Math.round(totalCompra(c) * 100) / 100;
+  const n = linhasDaCompra(c.id).length;
+  if (c.total === total && c.nItens === n) return;
+  c.total = total; c.nItens = n;
+  if (c.fin === "lancado" && c.finValor != null && Math.round(total * 100) !== c.finValor) c.fin = "revisar";
+  else if (c.fin === "revisar" && Math.round(total * 100) === c.finValor) c.fin = "lancado";
+  salvar(c);
+}
 export const buscaCompra = { q: "" };
 
 // ---------- Iniciar ----------
@@ -175,11 +189,12 @@ export function abrirLinha({ itemId, linhaId, compraId }) {
       marca: g("#ln-marca").value.trim(), promo: g("#ln-promo").checked, validade: g("#ln-val").value || "",
     });
     salvar(reg);
+    gravarTotal(compra);
     fecharJanela();
     buscaCompra.q = "";
     aviso(linha ? "Salvo" : `${item.nome} no carrinho`);
   });
-  g("#ln-tirar")?.addEventListener("click", () => { apagar(linha); fecharJanela(); aviso(`${item.nome} saiu do carrinho`); });
+  g("#ln-tirar")?.addEventListener("click", () => { apagar(linha); gravarTotal(compra); fecharJanela(); aviso(`${item.nome} saiu do carrinho`); });
 }
 
 function comparacao(p, ult, melhor) {
@@ -225,6 +240,8 @@ export function finalizarCompra() {
     c.status = "fim";
     c.fimEm = c.data === hoje() ? Date.now() : tsDeIso(c.data) + 12 * 3600000;
     c.fin = "pendente";
+    c.total = Math.round((soma + c.ajuste) * 100) / 100;
+    c.nItens = linhasDaCompra(c.id).length;
     salvar(c);
     // tira da lista o que foi comprado
     const comprados = new Set(linhasDaCompra(c.id).map(l => l.item));
@@ -260,7 +277,7 @@ export function telaCompras() {
   ${aberta ? `<a class="faixa" href="#/comprando">🛒 Compra em andamento em ${esc(nomeLoja(aberta.loja))} · continuar</a>` : `<div class="botoes col"><button class="btn" data-acao="iniciar-compra" data-tipo="semanal">Iniciar Modo Compra</button></div>`}
   ${lista.length ? [...porMes].map(([m, cs]) => `<h3 class="secao linha1"><span>${nomeMes(m)}</span><span class="num">${reais(cs.reduce((s, c) => s + totalCompra(c), 0))}</span></h3>
     <div class="cartao lista">${cs.map(c => `<a class="li botao" href="#/compra/${c.id}"><span class="tx"><span class="linha1"><b>${dataCurta(c.data)} · ${esc(nomeLoja(c.loja))}</b><span class="num">${reais(totalCompra(c))}</span></span>
-      <span class="sub">${NOME_TIPO[c.tipo] || ""} · ${linhasDaCompra(c.id).length} itens${c.pag ? " · " + esc(c.pag) : ""}${c.por ? " · " + esc(c.por) : ""}${c.fin === "pendente" ? ` · <span class="pend">a lançar no financeiro</span>` : ""}</span></span></a>`).join("")}</div>`).join("") : `<p class="vazio">Nenhuma compra registrada ainda.</p>`}`;
+      <span class="sub">${NOME_TIPO[c.tipo] || ""} · ${linhasDaCompra(c.id).length} itens${c.pag ? " · " + esc(c.pag) : ""}${c.por ? " · " + esc(c.por) : ""}${c.fin === "pendente" || c.fin === "revisar" ? ` · <span class="pend">${NOME_FIN[c.fin]}</span>` : ""}</span></span></a>`).join("")}</div>`).join("") : `<p class="vazio">Nenhuma compra registrada ainda.</p>`}`;
 }
 
 export function telaCompra(id) {
@@ -273,11 +290,11 @@ export function telaCompra(id) {
   <header class="topo"><div><a class="voltar" href="#/compras">← Compras</a><h1>${esc(nomeLoja(c.loja))}</h1><p class="sub">${diaSemana(c.data)}, ${dataCurta(c.data)} · ${NOME_TIPO[c.tipo] || ""}${c.por ? " · " + esc(c.por) : ""}</p></div><button class="btn mini-btn sec" data-acao="editar-compra" data-id="${id}">Editar</button></header>
   <div class="kpis">
     <div class="kpi"><span class="sub">Total pago</span><b>${reais(totalCompra(c))}</b><span class="sub">${c.pag ? esc(c.pag) : ""}${c.ajuste ? ` · ajuste ${reais(c.ajuste)}` : ""}</span></div>
-    <div class="kpi"><span class="sub">Itens</span><b>${ls.length}</b><span class="sub">${c.fin === "pendente" ? "a lançar no financeiro" : c.fin === "lancado" ? "lançada no financeiro" : ""}</span></div>
+    <div class="kpi"><span class="sub">Itens</span><b>${ls.length}</b><span class="sub ${c.fin === "pendente" || c.fin === "revisar" ? "pend" : ""}">${NOME_FIN[c.fin] || ""}</span></div>
   </div>
   <div class="cartao lista">${ls.map(l => linhaHtml(l).replace('data-acao="linha-editar"', `data-acao="linha-editar"`)).join("")}</div>
   <div class="linha1 kpi"><span class="sub">Soma dos itens</span><b class="num">${reais(soma)}</b></div>
-  <div class="botoes col"><button class="btn sec" data-acao="add-linha-compra" data-id="${id}">＋ Acrescentar item esquecido</button><button class="btn perigo sec" data-acao="excluir-compra" data-id="${id}">Excluir compra</button></div>
+  <div class="botoes col"><button class="btn sec" data-acao="add-linha-compra" data-id="${id}">＋ Acrescentar item esquecido</button>${c.fin === "lancado" || c.fin === "ignorado" ? `<button class="btn sec" data-acao="fin-de-novo" data-id="${id}">Mandar de novo para o Minhas Finanças</button>` : ""}<button class="btn perigo sec" data-acao="excluir-compra" data-id="${id}">Excluir compra</button></div>
   ${c.obs ? `<p class="sub">Obs.: ${esc(c.obs)}</p>` : ""}`;
 }
 
@@ -299,6 +316,7 @@ export function editarCompra(id) {
     if (novaData !== c.data) c.fimEm = tsDeIso(novaData) + 12 * 3600000;
     Object.assign(c, { loja: $("#fe-loja", el).value, data: novaData, tipo: $("#fe-tipo", el).value, pag: $("#fe-pag", el).value, obs: $("#fe-obs", el).value.trim(), ajuste: isFinite(pago) ? Math.round((pago - soma) * 100) / 100 : c.ajuste });
     salvar(c);
+    gravarTotal(c);
     fecharJanela();
     aviso("Compra salva");
   });
